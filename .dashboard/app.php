@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.57');
+define('WEBDASH_VERSION', '1.58');
 
 // --- Sprache / Language ---
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
@@ -3010,7 +3010,7 @@ footer{
         <h2 style="margin:0;flex:1"><?= $t['project_edit'] ?></h2>
         <span id="descModalName" style="font-size:.72rem;color:var(--text-dim);font-family:var(--mono)"></span>
       </div>
-      <form method="POST" action="/" id="descForm" enctype="multipart/form-data" onsubmit="syncEditor('descEditor','descFormDesc')">
+      <form method="POST" action="/" id="descForm" enctype="multipart/form-data" target="_self" onsubmit="syncEditor('descEditor','descFormDesc');closeDescModal()">
         <input type="hidden" name="save_project_desc" value="1">
         <input type="hidden" name="project_name" id="descFormName">
         <!-- bg inputs are inside projLogoBgArea -->
@@ -3353,6 +3353,7 @@ function removeProjLogo(variant){
 function closeDescModal(){
   document.getElementById('descModal').classList.remove('open');
 }
+window.addEventListener('pageshow',function(e){if(e.persisted)closeDescModal();});
 document.getElementById('descModal').addEventListener('click',function(e){
   if(e.target===this)closeDescModal();
 });
