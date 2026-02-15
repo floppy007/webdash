@@ -23,6 +23,7 @@ RUN mkdir -p /var/www/html/.dashboard \
     && chown -R www-data:www-data /var/www/html/.dashboard
 
 COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 VOLUME /var/www/html/.dashboard
 
 EXPOSE 80
