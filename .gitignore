@@ -1,11 +1,14 @@
-# Benutzerdaten (nicht überschreiben bei Updates)
-data/users.json
-data/projects.json
-data/activity.json
+# User-specific data (don't overwrite on updates)
+.dashboard/config.json
+.dashboard/app-logo-*
+.dashboard/favicon-*
+.dashboard/logo-*
+.dashboard/project-logos/
+.dashboard/screen.png
 
-# Generierte Dateien
-favicon.png
-favicon-32.png
+# Separate projects
+Intranet-Hinderlich/
+taskflow/
 
 # IDE / Tools
 .claude/

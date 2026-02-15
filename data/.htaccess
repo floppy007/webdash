@@ -1,3 +1,0 @@
-# Schütze JSON-Dateien vor direktem Zugriff
-Order Deny,Allow
-Deny from all
