@@ -1,369 +1,419 @@
 <?php
 /**
- * TaskFlow Installer
- * Copy this single file to your web server and open it in a browser.
- * It will download TaskFlow from GitHub and set up the admin account.
+ * webdash — Installation Wizard
+ * Standalone script to set up webdash on a new server.
+ * Delete this file after installation!
  *
- * Copyright (c) 2026 Florian Hesse
- * https://comnic-it.de
+ * Copyright (c) Florian Hesse / Comnic-IT
+ * Fischer Str. 1, 16515 Oranienburg
+ * info@comnic-it.de
+ *
+ * License: Free to use, modify, and for commercial use (MIT).
+ *
+ * https://github.com/floppy007/webdash
  */
 
-$repoOwner = 'floppy007';
-$repoName = 'taskflow';
-$branch = 'main';
-$error = '';
-$success = false;
-$downloaded = 0;
+// --- Language ---
+$lang = 'de';
+if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
+    $lang = $_GET['lang'];
+} elseif (preg_match('/^en/i', $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')) {
+    $lang = 'en';
+}
+$t = $lang === 'de' ? [
+    'title'=>'Installations-Wizard','toggle_lang'=>'English',
+    'system_check'=>'Systemcheck','install_now'=>'Jetzt installieren',
+    'installed'=>'Installiert','missing'=>'Fehlt','active'=>'Aktiv','unknown'=>'Unbekannt',
+    'dir_writable'=>'Verzeichnis beschreibbar',
+    'php_hint'=>'PHP 8.1 oder h&ouml;her ben&ouml;tigt',
+    'warn_reqs'=>'Einige Voraussetzungen sind nicht erf&uuml;llt. Die Installation kann trotzdem versucht werden, funktioniert aber m&ouml;glicherweise nicht korrekt.',
+    'success_title'=>'Installation erfolgreich!',
+    'success_text'=>'webdash v%s wurde installiert.',
+    'installed_files'=>'Installierte Dateien',
+    'apache_config'=>'Apache-Konfiguration',
+    'apache_hint'=>'Empfohlene Apache VirtualHost-Einstellungen:',
+    'apache_rewrite'=>'Stelle sicher, dass <code>mod_rewrite</code> aktiviert ist:',
+    'delete_warning'=>'<strong>Wichtig:</strong> L&ouml;sche diese Datei (<code>install.php</code>) nach der Installation aus Sicherheitsgr&uuml;nden!',
+    'to_config'=>'Jetzt konfigurieren',
+    'install_failed'=>'Installation fehlgeschlagen',
+    'downloaded_files'=>'Heruntergeladene Dateien',
+    'errors'=>'Fehler',
+    'back_to_check'=>'Zur&uuml;ck zum Systemcheck',
+    'retry'=>'Erneut versuchen',
+] : [
+    'title'=>'Installation Wizard','toggle_lang'=>'Deutsch',
+    'system_check'=>'System Check','install_now'=>'Install now',
+    'installed'=>'Installed','missing'=>'Missing','active'=>'Active','unknown'=>'Unknown',
+    'dir_writable'=>'Directory writable',
+    'php_hint'=>'PHP 8.1 or higher required',
+    'warn_reqs'=>'Some requirements are not met. Installation can still be attempted but may not work correctly.',
+    'success_title'=>'Installation successful!',
+    'success_text'=>'webdash v%s has been installed.',
+    'installed_files'=>'Installed files',
+    'apache_config'=>'Apache Configuration',
+    'apache_hint'=>'Recommended Apache VirtualHost settings:',
+    'apache_rewrite'=>'Make sure <code>mod_rewrite</code> is enabled:',
+    'delete_warning'=>'<strong>Important:</strong> Delete this file (<code>install.php</code>) after installation for security reasons!',
+    'to_config'=>'Configure now',
+    'install_failed'=>'Installation failed',
+    'downloaded_files'=>'Downloaded files',
+    'errors'=>'Errors',
+    'back_to_check'=>'Back to system check',
+    'retry'=>'Try again',
+];
 
-$installDir = __DIR__;
-$dataDir = $installDir . '/data';
+$step = $_GET['step'] ?? 'check';
+$langParam = '&lang=' . $lang;
 
-// Check if already fully installed
-if (file_exists($installDir . '/index.php') && file_exists($dataDir . '/users.json')) {
-    header('Location: index.php');
-    exit;
+// --- System Check ---
+function systemCheck(): array {
+    global $t;
+    $checks = [];
+
+    $phpOk = version_compare(PHP_VERSION, '8.1', '>=');
+    $checks[] = ['name' => 'PHP Version', 'value' => PHP_VERSION, 'ok' => $phpOk, 'hint' => $phpOk ? '' : $t['php_hint']];
+
+    $curlOk = function_exists('curl_init');
+    $checks[] = ['name' => 'cURL Extension', 'value' => $curlOk ? $t['installed'] : $t['missing'], 'ok' => $curlOk, 'hint' => $curlOk ? '' : 'apt install php-curl'];
+
+    $pdoOk = extension_loaded('pdo_mysql');
+    $checks[] = ['name' => 'PDO MySQL', 'value' => $pdoOk ? $t['installed'] : $t['missing'], 'ok' => $pdoOk, 'hint' => $pdoOk ? '' : 'apt install php-mysql'];
+
+    $modRewrite = false;
+    if (function_exists('apache_get_modules')) {
+        $modRewrite = in_array('mod_rewrite', apache_get_modules());
+    }
+    $checks[] = ['name' => 'Apache mod_rewrite', 'value' => $modRewrite ? $t['active'] : $t['unknown'], 'ok' => $modRewrite, 'hint' => $modRewrite ? '' : 'a2enmod rewrite && systemctl restart apache2'];
+
+    $writable = is_writable(__DIR__);
+    $checks[] = ['name' => $t['dir_writable'], 'value' => __DIR__, 'ok' => $writable, 'hint' => $writable ? '' : 'chown www-data:www-data ' . __DIR__];
+
+    return $checks;
 }
 
-// Check if files are downloaded but no user yet
-$filesExist = file_exists($installDir . '/index.php') && file_exists($installDir . '/api.php');
+// --- Download & Install ---
+function doInstall(): array {
+    $result = ['success' => true, 'files' => [], 'errors' => []];
 
-// HTTP context for GitHub API
-function ghContext() {
-    return stream_context_create([
-        'http' => [
-            'timeout' => 30,
-            'header' => "User-Agent: TaskFlow-Installer\r\n",
-            'follow_location' => true
-        ]
+    $ch = curl_init('https://api.github.com/repos/floppy007/webdash/releases/latest');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_HTTPHEADER => ['User-Agent: webdash-installer', 'Accept: application/vnd.github.v3+json'],
     ]);
-}
+    $response = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
 
-// Download a single file from GitHub raw
-function downloadFile($owner, $repo, $branch, $path, $destDir) {
-    $url = "https://raw.githubusercontent.com/$owner/$repo/$branch/$path";
-    $content = @file_get_contents($url, false, ghContext());
-    if ($content === false) return false;
+    if ($httpCode !== 200 || !$response) {
+        $result['success'] = false;
+        $result['errors'][] = 'GitHub API (HTTP ' . $httpCode . ($curlErr ? " — $curlErr" : '') . ')';
+        return $result;
+    }
 
-    $destPath = $destDir . '/' . $path;
-    $destFolder = dirname($destPath);
-    if (!is_dir($destFolder)) @mkdir($destFolder, 0755, true);
+    $release = json_decode($response, true);
+    $tag = $release['tag_name'] ?? '';
+    $result['version'] = ltrim($tag, 'v');
 
-    return file_put_contents($destPath, $content) !== false;
-}
+    if (!$tag) {
+        $result['success'] = false;
+        $result['errors'][] = 'No release found on GitHub';
+        return $result;
+    }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-
-    if ($action === 'download') {
-        // Step 1: Get file list from GitHub API (tree)
-        $apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/git/trees/$branch?recursive=1";
-        $treeJson = @file_get_contents($apiUrl, false, ghContext());
-
-        if ($treeJson === false) {
-            $error = 'Could not connect to GitHub API. Check your internet connection.';
+    // Create .dashboard/ directory first
+    $dashDir = __DIR__ . '/.dashboard';
+    if (!is_dir($dashDir)) {
+        if (mkdir($dashDir, 0755, true)) {
+            $result['files'][] = '.dashboard/';
         } else {
-            $tree = json_decode($treeJson, true);
-            if (!isset($tree['tree'])) {
-                $error = 'Invalid response from GitHub API.';
-            } else {
-                // Filter files (skip data/*.json, install.php, .git*)
-                $files = [];
-                foreach ($tree['tree'] as $item) {
-                    if ($item['type'] !== 'blob') continue;
-                    $path = $item['path'];
-                    // Skip files we don't want
-                    if ($path === 'install.php') continue;
-                    if (preg_match('#^data/(users|projects)\.json$#', $path)) continue;
-                    if (strpos($path, '.git') === 0 && $path !== '.gitignore') continue;
-                    $files[] = $path;
-                }
-
-                // Download each file
-                $total = count($files);
-                $ok = 0;
-                $failed = [];
-
-                foreach ($files as $file) {
-                    if (downloadFile($repoOwner, $repoName, $branch, $file, $installDir)) {
-                        $ok++;
-                    } else {
-                        $failed[] = $file;
-                    }
-                }
-
-                $downloaded = $ok;
-
-                if (empty($failed)) {
-                    // Create data dir if needed
-                    if (!is_dir($dataDir)) @mkdir($dataDir, 0755, true);
-                    $filesExist = true;
-                } else {
-                    $error = "Downloaded $ok/$total files. Failed: " . implode(', ', array_slice($failed, 0, 5));
-                    if (count($failed) > 5) $error .= ' ...and ' . (count($failed) - 5) . ' more';
-                }
-            }
+            $result['success'] = false;
+            $result['errors'][] = '.dashboard/ (mkdir failed)';
+            return $result;
         }
     }
 
-    if ($action === 'createuser') {
-        // Step 2: Create admin user
-        $name = trim($_POST['name'] ?? '');
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $passwordConfirm = $_POST['password_confirm'] ?? '';
+    // Required files (installation fails if these can't be downloaded)
+    $requiredFiles = [
+        'index.php'          => __DIR__ . '/index.php',
+        '.dashboard/app.php' => $dashDir . '/app.php',
+    ];
+    // Optional files (installation continues if these fail)
+    $optionalFiles = [
+        '.htaccess'                    => __DIR__ . '/.htaccess',
+        '.dashboard/app-logo-dark.png' => $dashDir . '/app-logo-dark.png',
+        '.dashboard/app-logo-light.png'=> $dashDir . '/app-logo-light.png',
+    ];
 
-        if (!$name || !$username || !$password) {
-            $error = 'Please fill in all fields.';
-        } elseif (strlen($password) < 4) {
-            $error = 'Password must be at least 4 characters.';
-        } elseif ($password !== $passwordConfirm) {
-            $error = 'Passwords do not match.';
+    foreach (array_merge($requiredFiles, $optionalFiles) as $repoPath => $localPath) {
+        $isRequired = isset($requiredFiles[$repoPath]);
+        $url = "https://raw.githubusercontent.com/floppy007/webdash/$tag/$repoPath";
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTPHEADER => ['User-Agent: webdash-installer'],
+        ]);
+        $content = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+
+        if ($code !== 200 || !$content) {
+            if (!$isRequired) continue;
+            $result['success'] = false;
+            $result['errors'][] = "$repoPath (HTTP $code" . ($err ? " — $err" : '') . ')';
+            continue;
+        }
+
+        if (file_put_contents($localPath, $content) !== false) {
+            $result['files'][] = $repoPath;
         } else {
-            if (!is_dir($dataDir)) {
-                @mkdir($dataDir, 0755, true);
-            }
-
-            if (!is_writable($dataDir)) {
-                $error = 'The /data directory is not writable. Set permissions: chmod 755 data';
-            } else {
-                // .htaccess
-                $htaccess = $dataDir . '/.htaccess';
-                if (!file_exists($htaccess)) {
-                    file_put_contents($htaccess, "Order deny,allow\nDeny from all\n");
-                }
-
-                $users = [[
-                    'id' => 1,
-                    'username' => $username,
-                    'password' => password_hash($password, PASSWORD_DEFAULT),
-                    'name' => $name,
-                    'createdAt' => date('c')
-                ]];
-
-                $usersOk = file_put_contents($dataDir . '/users.json', json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-                $projectsOk = file_put_contents($dataDir . '/projects.json', json_encode([], JSON_PRETTY_PRINT));
-
-                if ($usersOk !== false && $projectsOk !== false) {
-                    $success = true;
-                    @unlink(__FILE__);
-                } else {
-                    $error = 'Could not write data files.';
-                }
-            }
+            if (!$isRequired) continue;
+            $result['success'] = false;
+            $result['errors'][] = "$repoPath (write failed)";
         }
     }
+
+    @chmod(__DIR__ . '/index.php', 0644);
+    @chmod($dashDir . '/app.php', 0644);
+    if (file_exists(__DIR__ . '/.htaccess')) @chmod(__DIR__ . '/.htaccess', 0644);
+    @chmod($dashDir, 0755);
+
+    return $result;
 }
+
+$installResult = null;
+$selfDeleted = false;
+if ($step === 'install') {
+    $installResult = doInstall();
+    if ($installResult['success']) {
+        $selfDeleted = @unlink(__FILE__);
+    }
+}
+
+$checks = systemCheck();
+$allOk = !array_filter($checks, fn($c) => !$c['ok']);
 ?>
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="<?= $lang ?>">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/png" href="logo.png">
-<title>TaskFlow - Installation</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>webdash — <?= $lang === 'de' ? 'Installation' : 'Install' ?></title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  * {margin:0;padding:0;box-sizing:border-box}
-  body {
-    font-family:'Inter',sans-serif;
-    background:#f8fafc;
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-  }
-  .install-box {
-    background:#fff;
-    border-radius:16px;
-    box-shadow:0 10px 40px rgba(0,0,0,.1);
-    padding:40px;
-    width:100%;
-    max-width:460px;
-    animation:slideUp .6s cubic-bezier(.16,1,.3,1);
-  }
-  @keyframes slideUp {
-    from {opacity:0;transform:translateY(30px)}
-    to {opacity:1;transform:translateY(0)}
-  }
-  .logo {text-align:center;margin-bottom:24px}
-  .logo img {width:240px;height:auto}
-  .title {
-    text-align:center;
-    font-size:22px;
-    font-weight:700;
-    color:#0f172a;
-    margin-bottom:4px;
-  }
-  .subtitle {
-    text-align:center;
-    font-size:14px;
-    color:#64748b;
-    margin-bottom:28px;
-  }
-  .form-group {margin-bottom:16px}
-  .form-label {
-    display:block;
-    font-size:13px;
-    font-weight:600;
-    color:#374151;
-    margin-bottom:6px;
-  }
-  .form-input {
-    width:100%;
-    padding:10px 14px;
-    border:1px solid #e2e8f0;
-    border-radius:10px;
-    font-size:14px;
-    font-family:inherit;
-    transition:border-color .2s;
-    outline:none;
-  }
-  .form-input:focus {
-    border-color:#667eea;
-    box-shadow:0 0 0 3px rgba(102,126,234,.15);
-  }
-  .btn {
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:10px;
-    font-size:15px;
-    font-weight:600;
-    font-family:inherit;
-    cursor:pointer;
-    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-    color:#fff;
-    transition:transform .2s,box-shadow .2s;
-    margin-top:8px;
-    text-decoration:none;
-    display:inline-block;
-    text-align:center;
-  }
-  .btn:hover {
-    transform:translateY(-1px);
-    box-shadow:0 6px 20px rgba(102,126,234,.3);
-  }
-  .btn:active {transform:scale(.98)}
-  .error {
-    background:#fef2f2;
-    color:#dc2626;
-    padding:10px 14px;
-    border-radius:10px;
-    font-size:13px;
-    margin-bottom:16px;
-    border:1px solid #fecaca;
-  }
-  .success-box {text-align:center;padding:20px 0}
-  .success-icon {font-size:48px;margin-bottom:16px;color:#10b981}
-  .success-text {font-size:16px;color:#0f172a;font-weight:600;margin-bottom:8px}
-  .success-sub {font-size:13px;color:#64748b;margin-bottom:24px}
-  .info {
-    background:#f0fdf4;
-    color:#166534;
-    padding:10px 14px;
-    border-radius:10px;
-    font-size:12px;
-    margin-bottom:16px;
-    border:1px solid #bbf7d0;
-  }
-  .steps {display:flex;gap:8px;margin-bottom:24px;justify-content:center}
-  .step {
-    width:32px;height:32px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    font-size:13px;font-weight:700;
-    background:#e2e8f0;color:#64748b;
-  }
-  .step.active {background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
-  .step.done {background:#10b981;color:#fff}
-  .step-line {width:40px;height:2px;background:#e2e8f0;align-self:center}
-  .step-line.done {background:#10b981}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#051a1a;--bg-end:#0a1628;--surface:rgba(8,32,35,.85);--surface-2:rgba(12,42,45,.7);
+  --border:rgba(0,190,190,.1);--border-hover:rgba(0,210,210,.25);
+  --accent:#00d4cc;--accent-dim:rgba(0,212,200,.12);
+  --success:#10b981;--warn:#f59e0b;--danger:#ef4444;
+  --text:#f1f5f9;--text-muted:#8faab4;--text-dim:#5f8a96;
+  --shadow:rgba(0,0,0,.35);--dot-color:rgba(0,190,190,.03);
+  --font:'Outfit',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Fira Code',monospace;
+}
+html{font-size:15px}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  min-height:100vh;line-height:1.6;
+  background-image:
+    radial-gradient(circle at 1px 1px,var(--dot-color) 1px,transparent 0),
+    linear-gradient(145deg, var(--bg) 0%, #0a2e2e 30%, #0d2a3a 60%, var(--bg-end) 100%);
+  background-size:32px 32px, 100% 100%;
+  background-attachment:scroll, fixed;
+  display:flex;align-items:center;justify-content:center;
+  padding:2rem;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:2.5rem;width:100%;max-width:600px;animation:fadeUp .5s ease both;
+}
+.logo{text-align:center;margin-bottom:2rem}
+.logo h1{font-size:1.8rem;font-weight:700;letter-spacing:-.03em;margin-bottom:.25rem}
+.logo p{color:var(--text-muted);font-size:.85rem;font-weight:300}
+.lang-toggle{
+  position:absolute;top:1.5rem;right:1.5rem;font-size:.78rem;color:var(--text-muted);
+  text-decoration:none;padding:.35rem .7rem;border-radius:8px;border:1px solid var(--border);
+  transition:all .25s;font-family:var(--font);
+}
+.lang-toggle:hover{color:var(--accent);border-color:var(--border-hover)}
+.card{position:relative}
+
+.step-indicator{display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:2rem}
+.step-dot{width:10px;height:10px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);transition:all .3s}
+.step-dot.active{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px rgba(0,212,200,.3)}
+.step-dot.done{background:var(--success);border-color:var(--success)}
+.step-line{width:40px;height:1px;background:var(--border)}
+
+.section-title{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.75rem}
+
+.check-list{display:flex;flex-direction:column;gap:.5rem;margin-bottom:2rem}
+.check-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-size:.85rem}
+.check-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.75rem;font-weight:700}
+.check-icon.ok{background:rgba(16,185,129,.15);color:var(--success)}
+.check-icon.fail{background:rgba(239,68,68,.15);color:var(--danger)}
+.check-name{font-weight:500;flex:1}
+.check-value{font-family:var(--mono);font-size:.75rem;color:var(--text-muted)}
+.check-hint{font-size:.72rem;color:var(--danger);margin-top:.2rem}
+
+.file-list{margin-bottom:1.5rem}
+.file-item{display:flex;align-items:center;gap:.5rem;padding:.4rem 0;font-family:var(--mono);font-size:.82rem;color:var(--text-muted)}
+.file-item .ok{color:var(--success)}
+.file-item .fail{color:var(--danger)}
+
+.info-box{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:.82rem;line-height:1.7}
+.info-box code{font-family:var(--mono);font-size:.78rem;background:rgba(0,212,200,.08);padding:.15rem .4rem;border-radius:4px;color:var(--accent)}
+.info-box .label{font-weight:600;color:var(--text);display:block;margin-bottom:.3rem}
+
+.warning-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:.82rem;color:var(--danger);display:flex;align-items:flex-start;gap:.6rem}
+.warning-box svg{flex-shrink:0;margin-top:2px}
+
+.success-box{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;text-align:center}
+.success-box h3{color:var(--success);font-size:1.1rem;margin-bottom:.3rem}
+.success-box p{font-size:.85rem;color:var(--text-muted)}
+
+.actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
+.btn{padding:.75rem 1.5rem;border-radius:12px;border:none;font-family:var(--font);font-size:.9rem;font-weight:600;cursor:pointer;transition:all .25s;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{opacity:.85;transform:translateY(-1px)}
+.btn-secondary{background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border)}
+.btn-secondary:hover{color:var(--accent);border-color:var(--border-hover)}
 </style>
 </head>
 <body>
-<div class="install-box">
+
+<div class="card">
+  <a href="?step=<?= $step ?>&lang=<?= $lang === 'de' ? 'en' : 'de' ?>" class="lang-toggle">
+    <?= $lang === 'de' ? '&#127465;&#127466; DE' : '&#127468;&#127463; EN' ?>
+  </a>
   <div class="logo">
-    <?php if (file_exists(__DIR__ . '/logo.png')): ?>
-      <img src="logo.png" alt="TaskFlow">
-    <?php else: ?>
-      <div style="font-size:32px;font-weight:800;text-align:center;margin-bottom:8px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent">TaskFlow</div>
-    <?php endif; ?>
+    <h1>webdash</h1>
+    <p><?= $t['title'] ?></p>
   </div>
 
-  <?php if ($success): ?>
-    <div class="steps">
-      <div class="step done">1</div>
-      <div class="step-line done"></div>
-      <div class="step done">2</div>
-    </div>
-    <div class="success-box">
-      <div class="success-icon">&#10003;</div>
-      <div class="success-text">Installation complete!</div>
-      <div class="success-sub">TaskFlow has been set up successfully. The installer has been removed.</div>
-      <a href="index.php" class="btn" style="width:auto;padding:12px 32px">Open TaskFlow</a>
-    </div>
+  <div class="step-indicator">
+    <div class="step-dot <?= $step === 'check' ? 'active' : ($step !== 'check' ? 'done' : '') ?>"></div>
+    <div class="step-line"></div>
+    <div class="step-dot <?= $step === 'install' ? 'active' : ($step === 'done' ? 'done' : '') ?>"></div>
+    <div class="step-line"></div>
+    <div class="step-dot <?= $step === 'done' ? 'active' : '' ?>"></div>
+  </div>
 
-  <?php elseif ($filesExist): ?>
-    <div class="steps">
-      <div class="step done">1</div>
-      <div class="step-line done"></div>
-      <div class="step active">2</div>
+<?php if ($step === 'check'): ?>
+  <div class="section-title"><?= $t['system_check'] ?></div>
+  <div class="check-list">
+    <?php foreach ($checks as $check): ?>
+    <div class="check-item">
+      <div class="check-icon <?= $check['ok'] ? 'ok' : 'fail' ?>">
+        <?= $check['ok'] ? '&#10003;' : '&#10007;' ?>
+      </div>
+      <span class="check-name"><?= htmlspecialchars($check['name']) ?></span>
+      <span class="check-value"><?= htmlspecialchars($check['value']) ?></span>
     </div>
-    <div class="title">Create Admin Account</div>
-    <div class="subtitle">Set up your administrator login</div>
-
-    <?php if ($downloaded > 0): ?>
-      <div class="info"><?= $downloaded ?> files downloaded successfully.</div>
+    <?php if ($check['hint']): ?>
+      <div class="check-hint" style="padding-left:2.5rem"><?= $check['hint'] ?></div>
     <?php endif; ?>
+    <?php endforeach; ?>
+  </div>
 
-    <?php if ($error): ?>
-      <div class="error"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
+  <?php if (!$allOk): ?>
+  <div class="warning-box">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span><?= $t['warn_reqs'] ?></span>
+  </div>
+  <?php endif; ?>
 
-    <form method="post">
-      <input type="hidden" name="action" value="createuser">
-      <div class="form-group">
-        <label class="form-label">Full Name</label>
-        <input type="text" name="name" class="form-input" placeholder="e.g. Max Mustermann" value="<?= htmlspecialchars($_POST['name'] ?? '') ?>" required autofocus>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Username</label>
-        <input type="text" name="username" class="form-input" placeholder="e.g. admin" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <input type="password" name="password" class="form-input" placeholder="Min. 4 characters" required>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Confirm Password</label>
-        <input type="password" name="password_confirm" class="form-input" placeholder="Repeat password" required>
-      </div>
-      <button type="submit" class="btn">Create Account & Finish</button>
-    </form>
+  <div class="actions">
+    <a href="?step=install<?= $langParam ?>" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <?= $t['install_now'] ?>
+    </a>
+  </div>
+
+<?php elseif ($step === 'install' && $installResult): ?>
+
+  <?php if ($installResult['success']): ?>
+  <div class="success-box">
+    <h3><?= $t['success_title'] ?></h3>
+    <p><?= sprintf($t['success_text'], htmlspecialchars($installResult['version'] ?? '?')) ?></p>
+  </div>
+
+  <div class="section-title"><?= $t['installed_files'] ?></div>
+  <div class="file-list">
+    <?php foreach ($installResult['files'] as $file): ?>
+    <div class="file-item"><span class="ok">&#10003;</span> <?= htmlspecialchars($file) ?></div>
+    <?php endforeach; ?>
+  </div>
+
+  <div class="section-title"><?= $t['apache_config'] ?></div>
+  <div class="info-box">
+    <span class="label"><?= $t['apache_hint'] ?></span>
+    <code>DocumentRoot <?= htmlspecialchars(__DIR__) ?></code><br>
+    <code>AllowOverride All</code><br>
+    <code>DirectoryIndex index.php</code><br><br>
+    <?= $t['apache_rewrite'] ?><br>
+    <code>a2enmod rewrite &amp;&amp; systemctl restart apache2</code>
+  </div>
+
+  <?php if ($selfDeleted): ?>
+  <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:.82rem;color:var(--success);display:flex;align-items:center;gap:.6rem">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <span><?= $lang === 'de' ? '<code>install.php</code> wurde automatisch gel&ouml;scht.' : '<code>install.php</code> was automatically deleted.' ?></span>
+  </div>
+  <?php else: ?>
+  <div class="warning-box">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span><?= $t['delete_warning'] ?></span>
+  </div>
+  <?php endif; ?>
+
+  <div class="actions">
+    <a href="/" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <?= $t['to_config'] ?>
+    </a>
+  </div>
 
   <?php else: ?>
-    <div class="steps">
-      <div class="step active">1</div>
-      <div class="step-line"></div>
-      <div class="step">2</div>
-    </div>
-    <div class="title">Installation</div>
-    <div class="subtitle">Download TaskFlow from GitHub</div>
+  <div class="warning-box">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    <span><strong><?= $t['install_failed'] ?></strong></span>
+  </div>
 
-    <?php if ($error): ?>
-      <div class="error"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
-
-    <div class="info">
-      This will download all files from<br>
-      <strong>github.com/<?= $repoOwner ?>/<?= $repoName ?></strong>
-    </div>
-
-    <form method="post">
-      <input type="hidden" name="action" value="download">
-      <button type="submit" class="btn" onclick="this.textContent='Downloading...';this.disabled=true;this.form.submit()">Download & Install TaskFlow</button>
-    </form>
+  <?php if ($installResult['files']): ?>
+  <div class="section-title"><?= $t['downloaded_files'] ?></div>
+  <div class="file-list">
+    <?php foreach ($installResult['files'] as $file): ?>
+    <div class="file-item"><span class="ok">&#10003;</span> <?= htmlspecialchars($file) ?></div>
+    <?php endforeach; ?>
+  </div>
   <?php endif; ?>
+
+  <div class="section-title"><?= $t['errors'] ?></div>
+  <div class="file-list">
+    <?php foreach ($installResult['errors'] as $error): ?>
+    <div class="file-item"><span class="fail">&#10007;</span> <?= htmlspecialchars($error) ?></div>
+    <?php endforeach; ?>
+  </div>
+
+  <div class="actions">
+    <a href="?step=check<?= $langParam ?>" class="btn btn-secondary"><?= $t['back_to_check'] ?></a>
+    <a href="?step=install<?= $langParam ?>" class="btn btn-primary"><?= $t['retry'] ?></a>
+  </div>
+  <?php endif; ?>
+
+<?php endif; ?>
+
 </div>
+
 </body>
 </html>
