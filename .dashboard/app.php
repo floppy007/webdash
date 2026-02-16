@@ -909,6 +909,15 @@ if (isset($_GET['logout'])) {
     exit;
 }
 
+// --- Migration: admin_pass ohne users-Array → Admin in users übernehmen ---
+// Migration: existing admin_pass without users array → migrate admin into users
+$_migCfg = dashConfig();
+if (!empty($_migCfg['admin_pass']) && empty($_migCfg['users'])) {
+    $_migCfg['users'] = [['username' => 'admin', 'password' => $_migCfg['admin_pass'], 'name' => 'Admin', 'email' => $_migCfg['admin_email'] ?? '']];
+    saveDashConfig($_migCfg);
+}
+unset($_migCfg);
+
 $isAdmin    = !empty($_SESSION['dashboard_user']);
 $adminUser  = $_SESSION['dashboard_user'] ?? null;
 $loginError = $_SESSION['dashboard_login_error'] ?? '';
@@ -1370,7 +1379,7 @@ if (($isAdmin || $showServices) && !$needsSetup) {
     $inContainer = $dockerMode || file_exists('/.dockerenv');
     if ($isWindows || $inContainer) {
         // Port-Check: zuverlässiger in Docker & Windows / Port check: more reliable in Docker & Windows
-        $portChecks = [80=>'Apache', 3306=>'MariaDB'];
+        $portChecks = [80=>'Apache'];
         if (!$inContainer) $portChecks[22] = 'SSH';
         foreach ($portChecks as $port => $label) {
             $sock = @fsockopen('127.0.0.1', $port, $errno, $errstr, 1);
@@ -1383,7 +1392,7 @@ if (($isAdmin || $showServices) && !$needsSetup) {
             $services[] = ['name' => 'Docker', 'active' => true];
         }
     } else {
-        foreach (['apache2'=>'Apache','mariadb'=>'MariaDB','ssh'=>'SSH','cron'=>'Cron'] as $svc => $label) {
+        foreach (['apache2'=>'Apache','ssh'=>'SSH','cron'=>'Cron'] as $svc => $label) {
             $state = trim(shell_exec("systemctl is-active $svc 2>/dev/null") ?? 'unknown');
             $services[] = ['name' => $label, 'active' => $state === 'active'];
         }
