@@ -32,6 +32,7 @@ webdash zeigt alle Webanwendungen und Dienste auf deinem Server in einer übersi
 - **Admin-Panel** — Projekte bearbeiten, Benutzer verwalten, Logos, SMTP, DB-Config
 - **Setup-Wizard** — Geführte Ersteinrichtung (Docker: vereinfacht, Bare-Metal: vollständig)
 - **Auto-Update** — Update direkt im Admin-Panel
+- **Google-Suche** — Optionale Google-Suchleiste im User-View, aktivierbar in den Einstellungen
 - **Dark/Light Theme** — Umschaltbar
 - **Zweisprachig** — Deutsch & Englisch
 - **Unraid-kompatibel** — XML-Template für Unraid Community Apps enthalten
@@ -231,6 +232,7 @@ webdash shows all web applications and services on your server in a clean start 
 - **Admin Panel** — Edit projects, manage users, logos, SMTP, DB config
 - **Setup Wizard** — Guided first-run setup (Docker: simplified, bare-metal: full)
 - **Auto-Update** — Update directly from the admin panel
+- **Google Search** — Optional Google search bar in user view, can be enabled in settings
 - **Dark/Light Theme** — Toggleable
 - **Bilingual** — German & English
 - **Unraid-compatible** — XML template for Unraid Community Apps included
