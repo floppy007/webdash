@@ -175,6 +175,31 @@ Die Konfiguration wird in `.dashboard/config.json` gespeichert und kann jederzei
 - `AllowOverride All` muss für das Verzeichnis aktiviert sein
 - `mod_rewrite` muss aktiviert sein (`a2enmod rewrite && systemctl restart apache2`)
 
+### Reverse Proxy (HTTPS)
+
+webdash läuft bewusst nur über HTTP — für den internen Einsatz auf Homeservern und im LAN reicht das.
+Für externen Zugriff mit HTTPS empfehlen wir einen Reverse Proxy (z.B. nginx, Caddy, Traefik).
+webdash erkennt den `X-Forwarded-Proto`-Header automatisch und generiert Links mit dem richtigen Protokoll.
+
+Beispiel nginx:
+```nginx
+server {
+    listen 443 ssl;
+    server_name dash.example.com;
+
+    ssl_certificate     /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
 ### Update
 
 **Docker:** Neues Image pullen und Container neu starten:
@@ -346,6 +371,31 @@ Configuration is stored in `.dashboard/config.json` and can be changed at any ti
 - `index.php` must be in DocumentRoot (or VirtualHost directory)
 - `AllowOverride All` must be enabled for the directory
 - `mod_rewrite` must be active (`a2enmod rewrite && systemctl restart apache2`)
+
+### Reverse Proxy (HTTPS)
+
+webdash intentionally runs on HTTP only — for internal use on home servers and LANs, that's sufficient.
+For external access with HTTPS, we recommend a reverse proxy (e.g. nginx, Caddy, Traefik).
+webdash automatically detects the `X-Forwarded-Proto` header and generates links with the correct protocol.
+
+Example nginx:
+```nginx
+server {
+    listen 443 ssl;
+    server_name dash.example.com;
+
+    ssl_certificate     /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
 
 ### Update
 

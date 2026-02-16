@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.59');
+define('WEBDASH_VERSION', '1.60');
 
 // --- Sprache / Language ---
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
@@ -1297,7 +1297,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['forgot_identifier']))
             $expires = date('Y-m-d H:i:s', time() + 3600);
             $db->prepare('INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)')->execute([$user['id'], $token, $expires]);
             // Reset-Link erstellen
-            $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            // Reverse Proxy: X-Forwarded-Proto prüfen / check X-Forwarded-Proto for reverse proxy
+            $proto = (
+                (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+            ) ? 'https' : 'http';
             $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
             $resetUrl = $proto . '://' . $host . '/?action=reset_password&token=' . $token;
             $bodyHtml = '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">'
@@ -2063,6 +2067,12 @@ header{
   display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;
   transition:background .35s;
 }
+.uproj-icon.has-logo{padding:0;overflow:hidden;background:none}
+.uproj-icon.has-logo img{width:52px;height:52px;object-fit:contain;border-radius:14px}
+.uproj-icon.has-logo img.proj-logo-dark{display:block}
+.uproj-icon.has-logo img.proj-logo-light{display:none}
+.light .uproj-icon.has-logo img.proj-logo-dark{display:none}
+.light .uproj-icon.has-logo img.proj-logo-light{display:block}
 .uproj-info{flex:1;min-width:0}
 .uproj-name{font-size:1.2rem;font-weight:600;letter-spacing:-.01em}
 .uproj-type{font-family:var(--mono);font-size:.68rem;color:var(--accent);font-weight:500}
@@ -2486,9 +2496,8 @@ footer{
        <?= $isOnline ? 'target="_blank" rel="noopener"' : '' ?>>
       <div class="uproj-inner">
         <div class="uproj-top">
-          <div class="uproj-icon">
-            <?= !empty($proj['icon']) ? $proj['icon'] : (!empty($proj['docker']) ? "\xf0\x9f\x90\xb3" : match($proj['type']) { 'Node.js'=>"\xe2\xac\xa2",'Python'=>"\xf0\x9f\x90\x8d",'Link'=>"\xf0\x9f\x94\x97",default=>"\xe2\x9a\x99" }) ?>
-          </div>
+          <?php $uHasLogo = !empty($proj['logo_dark_ext']) || !empty($proj['logo_light_ext']); ?>
+          <div class="uproj-icon<?= $uHasLogo ? ' has-logo' : '' ?>"><?php if ($uHasLogo): ?><img src="/?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=dark" alt="" class="proj-logo-dark"><img src="/?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=light" alt="" class="proj-logo-light"><?php else: ?><?= !empty($proj['icon']) ? $proj['icon'] : (!empty($proj['docker']) ? "\xf0\x9f\x90\xb3" : match($proj['type']) { 'Node.js'=>"\xe2\xac\xa2",'Python'=>"\xf0\x9f\x90\x8d",'Link'=>"\xf0\x9f\x94\x97",default=>"\xe2\x9a\x99" }) ?><?php endif; ?></div>
           <div class="uproj-info">
             <div class="uproj-name"><?= htmlspecialchars(!empty($proj['display_name']) ? $proj['display_name'] : $proj['name']) ?></div>
             <div class="uproj-type"><?= htmlspecialchars(!empty($proj['docker']) ? (strlen($proj['type']) > 30 ? substr($proj['type'], 0, 30) . '...' : $proj['type']) : $proj['type']) ?></div>
