@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.61');
+define('WEBDASH_VERSION', '1.62');
 
 // --- Sprache / Language ---
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
@@ -1489,7 +1489,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <?php exit; }
 
 // --- Hostname & Logo immer laden ---
-$hostname  = gethostname();
+$hostname  = getenv('WEBDASH_HOSTNAME') ?: gethostname();
 $dashCfg   = dashConfig();
 $hasLogoDark  = !empty($dashCfg['logo_dark_ext']) && file_exists(DASH_LOGO_DARK . '.' . $dashCfg['logo_dark_ext']);
 $hasLogoLight = !empty($dashCfg['logo_light_ext']) && file_exists(DASH_LOGO_LIGHT . '.' . $dashCfg['logo_light_ext']);
