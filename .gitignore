@@ -2,6 +2,8 @@
 .dashboard/config.json
 .dashboard/logo-*
 .dashboard/project-logos/
+.dashboard/bg-image.*
+.dashboard/temp/
 .dashboard/screen.png
 
 # Separate projects
