@@ -1609,121 +1609,26 @@ if (!$needsSetup && $dockerMode) {
         ? array_values(array_filter($allContainers, fn($c) => in_array($c['name'], $includeContainers, true)))
         : $allContainers;
     // Config-Overrides anwenden
-    foreach ($projects as &$_dp) {
-        $dn = $_dp['name'];
-        if (!empty($dashCfg['project_titles'][$dn])) $_dp['display_name'] = $dashCfg['project_titles'][$dn];
-        if (!empty($dashCfg['project_descriptions'][$dn])) $_dp['description'] = $dashCfg['project_descriptions'][$dn];
-        if (!empty($dashCfg['project_icons'][$dn])) $_dp['icon'] = $dashCfg['project_icons'][$dn];
-        if (!empty($dashCfg['project_logo_dark_ext'][$dn])) $_dp['logo_dark_ext'] = $dashCfg['project_logo_dark_ext'][$dn];
-        if (!empty($dashCfg['project_logo_light_ext'][$dn])) $_dp['logo_light_ext'] = $dashCfg['project_logo_light_ext'][$dn];
-        if (!empty($dashCfg['project_maintenance'][$dn])) $_dp['status'] = 'maintenance';
-    }
+    foreach ($projects as &$_dp) applyProjectOverrides($_dp, $_dp['name'], $dashCfg);
     unset($_dp);
     // Zusätzlich Verzeichnis scannen wenn WEBDASH_SCAN_DIR gesetzt
     if ($dockerScanDir && is_dir($dockerScanDir)) {
-        foreach (scandir($dockerScanDir) as $dir) {
-            if ($dir[0] === '.' || !is_dir("$dockerScanDir/$dir")) continue;
-            $allDirs[] = $dir;
-            if ($hasIncludeConf && !in_array($dir, $includeDirs, true)) continue;
-            $path = "$dockerScanDir/$dir";
-            $project = [
-                'name'         => $dir,
-                'url'          => "/$dir/",
-                'lastModified' => filemtime($path),
-                'type'         => 'PHP',
-                'description'  => '',
-                'status'       => 'unknown',
-                'statusCode'   => 0,
-            ];
-            if (file_exists("$path/composer.json")) {
-                $c = @json_decode(file_get_contents("$path/composer.json"), true);
-                $project['description'] = $c['description'] ?? '';
-            }
-            if (file_exists("$path/package.json")) {
-                $p = @json_decode(file_get_contents("$path/package.json"), true);
-                $project['description'] = $project['description'] ?: ($p['description'] ?? '');
-                $project['type'] = 'Node.js';
-            }
-            if (file_exists("$path/requirements.txt") || file_exists("$path/pyproject.toml")) $project['type'] = 'Python';
-            $code = 0;
-            $ch = curl_init("http://127.0.0.1/$dir/");
-            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>3,CURLOPT_CONNECTTIMEOUT=>2,CURLOPT_NOBODY=>true,CURLOPT_FOLLOWLOCATION=>true,CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_SSL_VERIFYHOST=>0,CURLOPT_HTTPHEADER=>['Host: '.($_SERVER['HTTP_HOST']??'localhost')]]);
-            curl_exec($ch);
-            $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            $project['statusCode'] = $code;
-            $project['status'] = match(true) { $code>=200&&$code<400=>'online', $code===403=>'gesperrt', $code>=400=>'fehler', default=>'offline' };
-            if (!empty($dashCfg['project_titles'][$dir])) $project['display_name'] = $dashCfg['project_titles'][$dir];
-            if (!empty($dashCfg['project_descriptions'][$dir])) $project['description'] = $dashCfg['project_descriptions'][$dir];
-            if (!empty($dashCfg['project_icons'][$dir])) $project['icon'] = $dashCfg['project_icons'][$dir];
-            if (!empty($dashCfg['project_logo_dark_ext'][$dir])) $project['logo_dark_ext'] = $dashCfg['project_logo_dark_ext'][$dir];
-            if (!empty($dashCfg['project_logo_light_ext'][$dir])) $project['logo_light_ext'] = $dashCfg['project_logo_light_ext'][$dir];
-            if (!empty($dashCfg['project_maintenance'][$dir])) $project['status'] = 'maintenance';
-            $projects[] = $project;
-        }
+        $scanResult = scanDirForProjects($dockerScanDir, $dashCfg, $includeDirs, $hasIncludeConf);
+        $allDirs = array_merge($allDirs, $scanResult['allDirs']);
+        $projects = array_merge($projects, $scanResult['projects']);
     }
 } elseif (!$needsSetup && is_dir($webRoot)) {
     // Normal-Modus: Verzeichnis scannen
-    foreach (scandir($webRoot) as $dir) {
-        if ($dir[0] === '.' || !is_dir("$webRoot/$dir")) continue;
-        $allDirs[] = $dir;
-        if ($hasIncludeConf && !in_array($dir, $includeDirs, true)) continue;
-        $path = "$webRoot/$dir";
-        $project = [
-            'name'         => $dir,
-            'url'          => "/$dir/",
-            'lastModified' => filemtime($path),
-            'type'         => 'PHP',
-            'description'  => '',
-            'status'       => 'unknown',
-            'statusCode'   => 0,
-        ];
-        if (file_exists("$path/composer.json")) {
-            $c = @json_decode(file_get_contents("$path/composer.json"), true);
-            $project['description'] = $c['description'] ?? '';
-        }
-        if (file_exists("$path/package.json")) {
-            $p = @json_decode(file_get_contents("$path/package.json"), true);
-            $project['description'] = $project['description'] ?: ($p['description'] ?? '');
-            $project['type'] = 'Node.js';
-        }
-        if (file_exists("$path/requirements.txt") || file_exists("$path/pyproject.toml")) $project['type'] = 'Python';
-        if (empty($project['description']) && file_exists("$path/config/app.php")) {
-            $cfg = @file_get_contents("$path/config/app.php");
-            if ($cfg && preg_match("/'name'\s*=>\s*'([^']+)'/", $cfg, $nm)) $project['description'] = $nm[1];
-        }
-        // HTTP-Check
-        $code = 0;
-        $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/');
-        $relPath = ($docRoot && str_starts_with($path, $docRoot)) ? substr($path, strlen($docRoot)) : '/' . $dir;
-        $ch = curl_init("http://127.0.0.1" . $relPath . "/");
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>3,CURLOPT_CONNECTTIMEOUT=>2,CURLOPT_NOBODY=>true,CURLOPT_FOLLOWLOCATION=>true,CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_SSL_VERIFYHOST=>0,CURLOPT_HTTPHEADER=>['Host: '.($_SERVER['HTTP_HOST']??'localhost')]]);
-        curl_exec($ch);
-        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        $project['statusCode'] = $code;
-        $project['status'] = match(true) { $code>=200&&$code<400=>'online', $code===403=>'gesperrt', $code>=400=>'fehler', default=>'offline' };
-        if (!empty($dashCfg['project_titles'][$dir])) $project['display_name'] = $dashCfg['project_titles'][$dir];
-        if (!empty($dashCfg['project_descriptions'][$dir])) $project['description'] = $dashCfg['project_descriptions'][$dir];
-        if (!empty($dashCfg['project_icons'][$dir])) $project['icon'] = $dashCfg['project_icons'][$dir];
-        if (!empty($dashCfg['project_logo_dark_ext'][$dir])) $project['logo_dark_ext'] = $dashCfg['project_logo_dark_ext'][$dir];
-        if (!empty($dashCfg['project_logo_light_ext'][$dir])) $project['logo_light_ext'] = $dashCfg['project_logo_light_ext'][$dir];
-        if (!empty($dashCfg['project_maintenance'][$dir])) $project['status'] = 'maintenance';
-        $projects[] = $project;
-    }
+    $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/');
+    $scanResult = scanDirForProjects($webRoot, $dashCfg, $includeDirs, $hasIncludeConf, $docRoot);
+    $allDirs = $scanResult['allDirs'];
+    $projects = $scanResult['projects'];
 }
 
 // --- Manuelle Links einmergen ---
 foreach (($dashCfg['manual_links'] ?? []) as $i => $ml) {
     $mlUrl = $ml['url'] ?? '';
-    $mlCode = 0;
-    if ($mlUrl) {
-        $ch = curl_init($mlUrl);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>3,CURLOPT_CONNECTTIMEOUT=>2,CURLOPT_NOBODY=>true,CURLOPT_FOLLOWLOCATION=>true,CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_SSL_VERIFYHOST=>0]);
-        curl_exec($ch);
-        $mlCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-    }
+    $mlCode = $mlUrl ? httpHealthCheck($mlUrl) : 0;
     $mlName = $ml['name'] ?? '';
     $projects[] = [
         'name'         => $mlName,
@@ -1735,7 +1640,7 @@ foreach (($dashCfg['manual_links'] ?? []) as $i => $ml) {
         'icon'         => $dashCfg['project_icons'][$mlName] ?? '',
         'logo_dark_ext'  => $dashCfg['project_logo_dark_ext'][$mlName] ?? '',
         'logo_light_ext' => $dashCfg['project_logo_light_ext'][$mlName] ?? '',
-        'status'       => !empty($dashCfg['project_maintenance'][$mlName]) ? 'maintenance' : match(true) { $mlCode>=200&&$mlCode<400=>'online', $mlCode===403=>'gesperrt', $mlCode>=400=>'fehler', default=>'offline' },
+        'status'       => !empty($dashCfg['project_maintenance'][$mlName]) ? 'maintenance' : httpCodeToStatus($mlCode),
         'statusCode'   => $mlCode,
         'manual'       => true,
         'manual_index' => $i,
@@ -1771,6 +1676,72 @@ function barColor(float $pct): string {
     if ($pct >= 90) return '#ef4444';
     if ($pct >= 75) return '#f59e0b';
     return 'var(--accent)';
+}
+// HTTP-Status-Code zu Status-String / HTTP status code to status string
+function httpCodeToStatus(int $code): string {
+    return match(true) { $code>=200&&$code<400=>'online', $code===403=>'gesperrt', $code>=400=>'fehler', default=>'offline' };
+}
+// HTTP-Health-Check per CURL / HTTP health check via CURL
+function httpHealthCheck(string $url, array $extraHeaders = []): int {
+    $ch = curl_init($url);
+    $opts = [CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>3,CURLOPT_CONNECTTIMEOUT=>2,CURLOPT_NOBODY=>true,CURLOPT_FOLLOWLOCATION=>true,CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_SSL_VERIFYHOST=>0];
+    if ($extraHeaders) $opts[CURLOPT_HTTPHEADER] = $extraHeaders;
+    curl_setopt_array($ch, $opts);
+    curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return $code;
+}
+// Config-Overrides auf Projekt anwenden / Apply config overrides to project
+function applyProjectOverrides(array &$project, string $name, array $cfg): void {
+    if (!empty($cfg['project_titles'][$name])) $project['display_name'] = $cfg['project_titles'][$name];
+    if (!empty($cfg['project_descriptions'][$name])) $project['description'] = $cfg['project_descriptions'][$name];
+    if (!empty($cfg['project_icons'][$name])) $project['icon'] = $cfg['project_icons'][$name];
+    if (!empty($cfg['project_logo_dark_ext'][$name])) $project['logo_dark_ext'] = $cfg['project_logo_dark_ext'][$name];
+    if (!empty($cfg['project_logo_light_ext'][$name])) $project['logo_light_ext'] = $cfg['project_logo_light_ext'][$name];
+    if (!empty($cfg['project_maintenance'][$name])) $project['status'] = 'maintenance';
+}
+// Verzeichnis scannen und Projekte erstellen / Scan directory and build projects
+function scanDirForProjects(string $scanDir, array $dashCfg, array $includeDirs, bool $hasIncludeConf, ?string $docRoot = null): array {
+    $projects = [];
+    $allDirs = [];
+    $hostHeader = ['Host: '.($_SERVER['HTTP_HOST']??'localhost')];
+    foreach (scandir($scanDir) as $dir) {
+        if ($dir[0] === '.' || !is_dir("$scanDir/$dir")) continue;
+        $allDirs[] = $dir;
+        if ($hasIncludeConf && !in_array($dir, $includeDirs, true)) continue;
+        $path = "$scanDir/$dir";
+        $project = ['name'=>$dir,'url'=>"/$dir/",'lastModified'=>filemtime($path),'type'=>'PHP','description'=>'','status'=>'unknown','statusCode'=>0];
+        if (file_exists("$path/composer.json")) {
+            $c = @json_decode(file_get_contents("$path/composer.json"), true);
+            $project['description'] = $c['description'] ?? '';
+        }
+        if (file_exists("$path/package.json")) {
+            $p = @json_decode(file_get_contents("$path/package.json"), true);
+            $project['description'] = $project['description'] ?: ($p['description'] ?? '');
+            $project['type'] = 'Node.js';
+        }
+        if (file_exists("$path/requirements.txt") || file_exists("$path/pyproject.toml")) $project['type'] = 'Python';
+        if (empty($project['description']) && file_exists("$path/config/app.php")) {
+            $cfg = @file_get_contents("$path/config/app.php");
+            if ($cfg && preg_match("/'name'\s*=>\s*'([^']+)'/", $cfg, $nm)) $project['description'] = $nm[1];
+        }
+        $relPath = ($docRoot && str_starts_with($path, $docRoot)) ? substr($path, strlen($docRoot)) : "/$dir";
+        $code = httpHealthCheck("http://127.0.0.1$relPath/", $hostHeader);
+        $project['statusCode'] = $code;
+        $project['status'] = httpCodeToStatus($code);
+        applyProjectOverrides($project, $dir, $dashCfg);
+        $projects[] = $project;
+    }
+    return ['projects' => $projects, 'allDirs' => $allDirs];
+}
+// Google-Suchleiste rendern / Render Google search bar
+function renderGoogleSearch(string $extraStyle = ''): void {
+    $style = $extraStyle ? " style=\"$extraStyle\"" : '';
+    echo '<form class="google-search" action="https://www.google.com/search" method="GET" target="_blank"'.$style.'>'
+        .'<svg class="google-search-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A11.96 11.96 0 001 12c0 1.94.46 3.77 1.18 5.42l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>'
+        .'<input type="text" name="q" placeholder="Google..." autocomplete="off">'
+        .'</form>';
 }
 function getSystemResources(): array {
     $isWin = PHP_OS_FAMILY === 'Windows';
@@ -2526,12 +2497,7 @@ footer{
     <?php endif; ?>
   </div>
 
-  <?php if ($googleSearchEnabled): ?>
-  <form class="google-search" action="https://www.google.com/search" method="GET" target="_blank">
-    <svg class="google-search-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A11.96 11.96 0 001 12c0 1.94.46 3.77 1.18 5.42l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-    <input type="text" name="q" placeholder="Google..." autocomplete="off">
-  </form>
-  <?php endif; ?>
+  <?php if ($googleSearchEnabled) renderGoogleSearch(); ?>
 
   <?php if (empty($projects)): ?>
     <div class="empty"><?= $t['no_apps'] ?></div>
@@ -3025,12 +2991,7 @@ footer{
   </div>
   <?php endif; ?>
 
-  <?php if ($googleSearchEnabled): ?>
-  <form class="google-search" action="https://www.google.com/search" method="GET" target="_blank" style="margin-bottom:1rem">
-    <svg class="google-search-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A11.96 11.96 0 001 12c0 1.94.46 3.77 1.18 5.42l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-    <input type="text" name="q" placeholder="Google..." autocomplete="off">
-  </form>
-  <?php endif; ?>
+  <?php if ($googleSearchEnabled) renderGoogleSearch('margin-bottom:1rem'); ?>
 
   <div class="section-title"><?= $dockerMode ? $t['docker_containers'] : $t['projects'] ?> (<?= count($projects) ?>)</div>
   <?php if (!empty($projects)): ?>
