@@ -54,6 +54,7 @@ services:
       - WEBDASH_DB_PASS=webdash
       - WEBDASH_DOCKER_MODE=true
       #- WEBDASH_HOST_IP=192.168.1.100  # Optional: nur bei Reverse-Proxy
+      #- WEBDASH_HOSTNAME=mein-server    # Optional: Anzeigename statt Container-ID
       #- WEBDASH_SCAN_DIR=/sites         # Optional: zusätzlich Verzeichnis scannen
     volumes:
       - webdash-data:/var/www/html/.dashboard
@@ -102,6 +103,7 @@ Dashboard öffnen: `http://SERVER-IP:8080`
 | `WEBDASH_DB_USER` | Datenbank-Benutzer | Ja |
 | `WEBDASH_DB_PASS` | Datenbank-Passwort | Ja |
 | `WEBDASH_HOST_IP` | Host-IP für Container-URLs (Default: `HTTP_HOST`) | Optional |
+| `WEBDASH_HOSTNAME` | Anzeigename im Dashboard (Default: System-Hostname) | Optional |
 | `WEBDASH_SCAN_DIR` | Zusätzliches Verzeichnis scannen (+ Volume-Mount nötig) | Optional |
 
 ##### Container per Label anpassen
@@ -251,6 +253,7 @@ services:
       - WEBDASH_DB_PASS=webdash
       - WEBDASH_DOCKER_MODE=true
       #- WEBDASH_HOST_IP=192.168.1.100  # Optional: only for reverse proxy
+      #- WEBDASH_HOSTNAME=my-server      # Optional: display name instead of container ID
       #- WEBDASH_SCAN_DIR=/sites         # Optional: also scan a directory
     volumes:
       - webdash-data:/var/www/html/.dashboard
@@ -299,6 +302,7 @@ Open dashboard: `http://SERVER-IP:8080`
 | `WEBDASH_DB_USER` | Database user | Yes |
 | `WEBDASH_DB_PASS` | Database password | Yes |
 | `WEBDASH_HOST_IP` | Host IP for container URLs (default: `HTTP_HOST`) | Optional |
+| `WEBDASH_HOSTNAME` | Display name in dashboard (default: system hostname) | Optional |
 | `WEBDASH_SCAN_DIR` | Also scan a directory for web apps (requires volume mount) | Optional |
 
 ##### Customize Containers with Labels
