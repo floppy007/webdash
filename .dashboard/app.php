@@ -495,14 +495,20 @@ function dashboardSendMail(string $to, string $subject, string $bodyHtml): bool 
     return str_starts_with(trim($resp), '250');
 }
 
-// --- Setup (POST) — Ersteinrichtung Admin-Passwort ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['setup_password'], $_POST['setup_confirm'])) {
+// --- Setup (POST) — Ersteinrichtung / First-run setup ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['setup_username'], $_POST['setup_password'], $_POST['setup_confirm'])) {
+    $setupUser = trim($_POST['setup_username']);
     $pw  = $_POST['setup_password'];
     $pw2 = $_POST['setup_confirm'];
     $setupInputData = [
+        'username' => $setupUser,
+        'email'    => trim($_POST['setup_email'] ?? ''),
         'scan_dir' => $_POST['setup_scan_dir'] ?? '',
     ];
-    if (strlen($pw) < 4) {
+    if (!$setupUser) {
+        $_SESSION['dashboard_setup_error'] = $lang === 'de' ? 'Benutzername erforderlich' : 'Username required';
+        $_SESSION['dashboard_setup_input'] = $setupInputData;
+    } elseif (strlen($pw) < 4) {
         $_SESSION['dashboard_setup_error'] = $t['pw_short'];
         $_SESSION['dashboard_setup_input'] = $setupInputData;
     } elseif ($pw !== $pw2) {
@@ -512,13 +518,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['setup_password'], $_P
         $cfg = dashConfig();
         $pwHash = password_hash($pw, PASSWORD_DEFAULT);
         $cfg['admin_pass'] = $pwHash;
+        $setupEmail = trim($_POST['setup_email'] ?? '');
+        if ($setupEmail) $cfg['admin_email'] = $setupEmail;
+        // Benutzer anlegen / Create user
+        $cfg['users'] = [['username' => $setupUser, 'password' => $pwHash, 'name' => ucfirst($setupUser), 'email' => $setupEmail]];
         // Scan-Verzeichnis aus Setup speichern (nicht im Docker-Modus)
         if (!$dockerMode && !empty($_POST['setup_scan_dir'])) {
             $dir = rtrim(trim($_POST['setup_scan_dir']), '/\\');
             if ($dir && is_dir($dir)) $cfg['scan_dir'] = $dir;
         }
         saveDashConfig($cfg);
-        $_SESSION['dashboard_user'] = ['id'=>0,'username'=>'admin','name'=>'Admin','role'=>'admin'];
+        $_SESSION['dashboard_user'] = ['id'=>0,'username'=>$setupUser,'name'=>ucfirst($setupUser),'role'=>'admin'];
     }
     header('Location: /');
     exit;
@@ -908,17 +918,6 @@ unset($_SESSION['dashboard_setup_error']);
 $setupInput = $_SESSION['dashboard_setup_input'] ?? null;
 unset($_SESSION['dashboard_setup_input']);
 
-// --- Auto-Setup im Docker-Modus: Admin-Passwort aus Env-Vars anlegen ---
-if ($dockerMode) {
-    $envAdminPass = getenv('WEBDASH_ADMIN_PASS') ?: '';
-    if ($envAdminPass) {
-        $cfg = dashConfig();
-        if (empty($cfg['admin_pass'])) {
-            $cfg['admin_pass'] = password_hash($envAdminPass, PASSWORD_DEFAULT);
-            saveDashConfig($cfg);
-        }
-    }
-}
 
 // --- Setup-Modus: kein Admin-Passwort → Ersteinrichtung ---
 $_dashCfgCheck = dashConfig();
@@ -1651,6 +1650,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   <p style="font-size:.85rem;color:var(--text-muted);text-align:center;margin-bottom:1rem"><?= $t['setup_desc'] ?></p>
   <?php if ($setupError): ?><div class="error-msg"><?= htmlspecialchars($setupError) ?></div><?php endif; ?>
   <form method="POST" action="/">
+    <div class="field">
+      <label><?= $t['username'] ?></label>
+      <input type="text" name="setup_username" value="<?= htmlspecialchars($setupInput['username'] ?? '') ?>" required placeholder="admin" autocomplete="username" autofocus>
+    </div>
+    <div class="field">
+      <label><?= $t['email'] ?> <span style="font-size:.7rem;color:var(--text-dim)">(<?= $lang === 'de' ? 'optional' : 'optional' ?>)</span></label>
+      <input type="email" name="setup_email" value="<?= htmlspecialchars($setupInput['email'] ?? '') ?>" placeholder="admin@example.com" autocomplete="email">
+      <div class="field-hint"><?= $lang === 'de' ? 'F&uuml;r Passwort-Zur&uuml;cksetzung per E-Mail' : 'For password reset via email' ?></div>
+    </div>
     <div class="field">
       <label><?= $t['new_password'] ?></label>
       <input type="password" name="setup_password" required minlength="4" autocomplete="new-password">
