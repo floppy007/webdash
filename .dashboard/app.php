@@ -2059,6 +2059,12 @@ footer{
 }
 .footer-copy a{color:var(--text-dim);text-decoration:none;transition:color .25s}
 .footer-copy a:hover{color:var(--accent)}
+body.has-bg footer{
+  color:var(--text);border-top:none;margin-top:2rem;padding:.75rem 1.5rem;
+  background:var(--surface);border-radius:12px;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+body.has-bg .footer-copy a{color:var(--text-muted)}
 
 /* Settings Bar */
 .settings-bar{
