@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.62');
+define('WEBDASH_VERSION', '1.63');
 
 // --- Sprache / Language ---
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
@@ -89,6 +89,7 @@ $t = $lang === 'de' ? [
     'docker_mode'=>'Docker-Modus','docker_containers'=>'Container','docker_no_socket'=>'Docker-Socket nicht verf&uuml;gbar',
     'docker_no_containers'=>'Keine Container gefunden','docker_container_id'=>'Container-ID',
     'visible_containers'=>'Sichtbare Container','visible_containers_hint'=>'Container im Dashboard ein-/ausblenden',
+    'google_search'=>'Google-Suche',
 ] : [
     'toggle_theme'=>'Toggle theme','toggle_lang'=>'Deutsch','logout'=>'Logout',
     'server_home'=>'Server Overview',
@@ -152,6 +153,7 @@ $t = $lang === 'de' ? [
     'docker_mode'=>'Docker Mode','docker_containers'=>'Containers','docker_no_socket'=>'Docker socket not available',
     'docker_no_containers'=>'No containers found','docker_container_id'=>'Container ID',
     'visible_containers'=>'Visible Containers','visible_containers_hint'=>'Show/hide containers on the dashboard',
+    'google_search'=>'Google Search',
 ];
 
 // --- Dashboard-Konfiguration ---
@@ -968,6 +970,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_include_dirs']) 
     exit;
 }
 
+// --- Google-Suche ein-/ausschalten / Toggle Google Search ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_google_search']) && !empty($_SESSION['dashboard_user'])) {
+    $cfg = dashConfig();
+    $cfg['google_search'] = !empty($_POST['google_search_enabled']);
+    saveDashConfig($cfg);
+    header('Location: /');
+    exit;
+}
+
 // --- Sichtbare Container speichern ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_include_containers']) && !empty($_SESSION['dashboard_user'])) {
     $cfg = dashConfig();
@@ -1497,6 +1508,7 @@ $hasAnyLogo   = $hasLogoDark || $hasLogoLight;
 $hasAppLogoDark  = file_exists(DASH_APP_LOGO_DARK);
 $hasAppLogoLight = file_exists(DASH_APP_LOGO_LIGHT);
 $scanDir   = getenv('WEBDASH_SCAN_DIR') ?: ($dashCfg['scan_dir'] ?? dirname(__DIR__));
+$googleSearchEnabled = !empty($dashCfg['google_search']);
 
 // --- System-Infos ---
 $isWindows = PHP_OS_FAMILY === 'Windows';
@@ -2053,8 +2065,27 @@ header{
 .user-logo-img{height:72px;width:auto;max-width:200px;object-fit:contain;object-position:center top;display:inline-block}
 .user-count{display:inline-block;font-size:.72rem;font-weight:500;color:var(--accent);background:var(--accent-dim);padding:.25rem .75rem;border-radius:20px}
 
+.google-search{
+  display:flex;align-items:center;max-width:800px;margin:0 auto 1.5rem;position:relative;
+  animation:fadeUp .5s ease both;animation-delay:.15s;
+}
+.google-search-icon{
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;
+  color:var(--text-muted);pointer-events:none;flex-shrink:0;
+}
+.google-search input[type="text"]{
+  width:100%;padding:.7rem 1rem .7rem 42px;font-size:.92rem;
+  background:var(--surface);color:var(--text);border:1px solid var(--border);
+  border-radius:14px;outline:none;transition:border-color .2s,box-shadow .2s;
+  font-family:inherit;
+}
+.google-search input[type="text"]::placeholder{color:var(--text-muted);opacity:.6}
+.google-search input[type="text"]:focus{
+  border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);
+}
+
 .user-projects{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(max(220px,calc((100% - 3rem)/4)),1fr));gap:1rem;
   max-width:800px;margin:0 auto 2rem;
 }
 .uproj{
@@ -2137,7 +2168,7 @@ header{
 .svc-dot{width:7px;height:7px;border-radius:50%}
 
 /* Admin: Projects */
-.projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:.85rem}
+.projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(max(320px,calc((100% - 2.55rem)/4)),1fr));gap:.85rem}
 .proj{
   background:var(--surface);border:1px solid var(--border);border-radius:16px;
   transition:all .3s ease;position:relative;overflow:hidden;
@@ -2495,6 +2526,13 @@ footer{
     <?php endif; ?>
   </div>
 
+  <?php if ($googleSearchEnabled): ?>
+  <form class="google-search" action="https://www.google.com/search" method="GET" target="_blank">
+    <svg class="google-search-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A11.96 11.96 0 001 12c0 1.94.46 3.77 1.18 5.42l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+    <input type="text" name="q" placeholder="Google..." autocomplete="off">
+  </form>
+  <?php endif; ?>
+
   <?php if (empty($projects)): ?>
     <div class="empty"><?= $t['no_apps'] ?></div>
   <?php else: ?>
@@ -2601,6 +2639,15 @@ footer{
         <span style="display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;border-radius:8px;background:var(--accent-dim);border:1px solid var(--border);font-size:.78rem;color:var(--accent);font-weight:500">🐳 <?= $t['docker_mode'] ?></span>
       </div>
       <?php endif; ?>
+      <form method="POST" action="/" class="settings-item">
+        <label class="settings-label"><?= $t['google_search'] ?></label>
+        <input type="hidden" name="save_google_search" value="1">
+        <label class="dir-toggle" style="margin:0">
+          <input type="checkbox" name="google_search_enabled" value="1"
+                 onchange="this.form.submit()" <?= $googleSearchEnabled ? 'checked' : '' ?>>
+          <span class="dir-toggle-switch"></span>
+        </label>
+      </form>
       <div class="settings-item">
         <label class="settings-label">Update (v<?= WEBDASH_VERSION ?>)</label>
         <div class="update-wrap" id="updateWrap">
@@ -2976,6 +3023,13 @@ footer{
       </div>
     </form>
   </div>
+  <?php endif; ?>
+
+  <?php if ($googleSearchEnabled): ?>
+  <form class="google-search" action="https://www.google.com/search" method="GET" target="_blank" style="margin-bottom:1rem">
+    <svg class="google-search-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A11.96 11.96 0 001 12c0 1.94.46 3.77 1.18 5.42l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+    <input type="text" name="q" placeholder="Google..." autocomplete="off">
+  </form>
   <?php endif; ?>
 
   <div class="section-title"><?= $dockerMode ? $t['docker_containers'] : $t['projects'] ?> (<?= count($projects) ?>)</div>
