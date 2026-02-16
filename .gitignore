@@ -9,6 +9,7 @@
 # Separate projects
 Intranet-Hinderlich/
 taskflow/
+lang/
 
 # IDE / Tools
 .claude/
