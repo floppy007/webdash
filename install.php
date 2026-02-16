@@ -76,9 +76,6 @@ function systemCheck(): array {
     $curlOk = function_exists('curl_init');
     $checks[] = ['name' => 'cURL Extension', 'value' => $curlOk ? $t['installed'] : $t['missing'], 'ok' => $curlOk, 'hint' => $curlOk ? '' : 'apt install php-curl'];
 
-    $pdoOk = extension_loaded('pdo_mysql');
-    $checks[] = ['name' => 'PDO MySQL', 'value' => $pdoOk ? $t['installed'] : $t['missing'], 'ok' => $pdoOk, 'hint' => $pdoOk ? '' : 'apt install php-mysql'];
-
     $modRewrite = false;
     if (function_exists('apache_get_modules')) {
         $modRewrite = in_array('mod_rewrite', apache_get_modules());
