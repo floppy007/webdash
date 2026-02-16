@@ -53,6 +53,7 @@ services:
       - "8080:80"
     environment:
       - WEBDASH_DOCKER_MODE=true
+      #- WEBDASH_ADMIN_PASS=geheim      # Optional: Admin-Passwort beim ersten Start setzen
       #- WEBDASH_HOST_IP=192.168.1.100  # Optional: nur bei Reverse-Proxy
       #- WEBDASH_HOSTNAME=mein-server    # Optional: Anzeigename statt Container-ID
       #- WEBDASH_SCAN_DIR=/sites         # Optional: zusätzlich Verzeichnis scannen
@@ -77,6 +78,7 @@ Dashboard öffnen: `http://SERVER-IP:8080`
 | Variable | Beschreibung | Pflicht |
 |---|---|---|
 | `WEBDASH_DOCKER_MODE` | `true` aktiviert Docker-Modus (Container statt Verzeichnisse) | Ja |
+| `WEBDASH_ADMIN_PASS` | Admin-Passwort beim ersten Start setzen (statt Setup-Wizard) | Optional |
 | `WEBDASH_HOST_IP` | Host-IP für Container-URLs (Default: `HTTP_HOST`) | Optional |
 | `WEBDASH_HOSTNAME` | Anzeigename im Dashboard (Default: System-Hostname) | Optional |
 | `WEBDASH_SCAN_DIR` | Zusätzliches Verzeichnis scannen (+ Volume-Mount nötig) | Optional |
@@ -219,6 +221,7 @@ services:
       - "8080:80"
     environment:
       - WEBDASH_DOCKER_MODE=true
+      #- WEBDASH_ADMIN_PASS=secret       # Optional: set admin password on first start
       #- WEBDASH_HOST_IP=192.168.1.100  # Optional: only for reverse proxy
       #- WEBDASH_HOSTNAME=my-server      # Optional: display name instead of container ID
       #- WEBDASH_SCAN_DIR=/sites         # Optional: also scan a directory
@@ -243,6 +246,7 @@ Open dashboard: `http://SERVER-IP:8080`
 | Variable | Description | Required |
 |---|---|---|
 | `WEBDASH_DOCKER_MODE` | `true` enables Docker mode (containers instead of directories) | Yes |
+| `WEBDASH_ADMIN_PASS` | Set admin password on first start (instead of setup wizard) | Optional |
 | `WEBDASH_HOST_IP` | Host IP for container URLs (default: `HTTP_HOST`) | Optional |
 | `WEBDASH_HOSTNAME` | Display name in dashboard (default: system hostname) | Optional |
 | `WEBDASH_SCAN_DIR` | Also scan a directory for web apps (requires volume mount) | Optional |
