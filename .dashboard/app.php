@@ -1571,15 +1571,23 @@ if ($isAdmin && !$needsSetup) {
             : str_replace('up ', '', $uptimeRaw);
     }
 
-    // Services
+    // Services — Docker: Port-Check (kein systemctl), Bare-Metal: systemctl
+    // Services — Docker: port check (no systemctl), bare-metal: systemctl
     $services = [];
-    if ($isWindows) {
-        // Port-Check: zuverlässiger als Service-Namen auf Windows/XAMPP
-        foreach ([80=>'Apache', 3306=>'MySQL'] as $port => $label) {
+    $inContainer = $dockerMode || file_exists('/.dockerenv');
+    if ($isWindows || $inContainer) {
+        // Port-Check: zuverlässiger in Docker & Windows / Port check: more reliable in Docker & Windows
+        $portChecks = [80=>'Apache', 3306=>'MariaDB'];
+        if (!$inContainer) $portChecks[22] = 'SSH';
+        foreach ($portChecks as $port => $label) {
             $sock = @fsockopen('127.0.0.1', $port, $errno, $errstr, 1);
             $active = (bool) $sock;
             if ($sock) fclose($sock);
             $services[] = ['name' => $label, 'active' => $active];
+        }
+        // Docker-Socket prüfen / Check Docker socket
+        if ($inContainer && file_exists('/var/run/docker.sock')) {
+            $services[] = ['name' => 'Docker', 'active' => true];
         }
     } else {
         foreach (['apache2'=>'Apache','mariadb'=>'MariaDB','ssh'=>'SSH','cron'=>'Cron'] as $svc => $label) {
