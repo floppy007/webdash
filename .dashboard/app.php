@@ -909,15 +909,6 @@ if (isset($_GET['logout'])) {
     exit;
 }
 
-// --- Migration: admin_pass ohne users-Array → Admin in users übernehmen ---
-// Migration: existing admin_pass without users array → migrate admin into users
-$_migCfg = dashConfig();
-if (!empty($_migCfg['admin_pass']) && empty($_migCfg['users'])) {
-    $_migCfg['users'] = [['username' => 'admin', 'password' => $_migCfg['admin_pass'], 'name' => 'Admin', 'email' => $_migCfg['admin_email'] ?? '']];
-    saveDashConfig($_migCfg);
-}
-unset($_migCfg);
-
 $isAdmin    = !empty($_SESSION['dashboard_user']);
 $adminUser  = $_SESSION['dashboard_user'] ?? null;
 $loginError = $_SESSION['dashboard_login_error'] ?? '';
@@ -928,9 +919,10 @@ $setupInput = $_SESSION['dashboard_setup_input'] ?? null;
 unset($_SESSION['dashboard_setup_input']);
 
 
-// --- Setup-Modus: kein Admin-Passwort → Ersteinrichtung ---
+// --- Setup-Modus: kein Admin oder keine Benutzer → Ersteinrichtung ---
+// Setup mode: no admin or no users → first-run setup
 $_dashCfgCheck = dashConfig();
-$needsSetup = empty($_dashCfgCheck['admin_pass']) && !$isAdmin;
+$needsSetup = (empty($_dashCfgCheck['admin_pass']) || empty($_dashCfgCheck['users'])) && !$isAdmin;
 
 // --- System-Stats API (AJAX, nur Admin) ---
 if (isset($_GET['action']) && $_GET['action'] === 'system_stats' && $isAdmin) {
