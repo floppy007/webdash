@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.64');
+define('WEBDASH_VERSION', '1.65');
 
 // --- Sprache / Language ---
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
@@ -737,8 +737,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_bg_mode']) && !e
 // --- Hintergrundbild-Effekte speichern / Save background image effects ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_bg_effects']) && !empty($_SESSION['dashboard_user'])) {
     $cfg = dashConfig();
-    $cfg['bg_blur'] = max(0, min(100, (int)($_POST['bg_blur'] ?? 10)));
-    $cfg['bg_brightness'] = max(0, min(100, (int)($_POST['bg_brightness'] ?? 55)));
+    $cfg['bg_blur'] = max(0, min(100, (int)($_POST['bg_blur'] ?? 0)));
+    $cfg['bg_brightness'] = max(0, min(100, (int)($_POST['bg_brightness'] ?? 28)));
     saveDashConfig($cfg);
     header('Location: /');
     exit;
@@ -1747,13 +1747,9 @@ body.has-bg.bg-preset{background-image:url('/?asset=wallpaper&theme=dark') !impo
 .light body.has-bg.bg-preset,body.has-bg.bg-preset.light{background-image:url('/?asset=wallpaper&theme=light') !important}
 body.has-bg::after{
   content:'';position:fixed;inset:0;z-index:0;
-  background:rgba(0,0,0,var(--bg-overlay-opacity,.45));
-  backdrop-filter:blur(var(--bg-blur,2px));
-  -webkit-backdrop-filter:blur(var(--bg-blur,2px));
+  backdrop-filter:blur(var(--bg-blur,0px)) brightness(var(--bg-brightness,.55));
+  -webkit-backdrop-filter:blur(var(--bg-blur,0px)) brightness(var(--bg-brightness,.55));
   pointer-events:none;
-}
-.light body.has-bg::after,body.has-bg.light::after{
-  background:rgba(255,255,255,var(--bg-overlay-opacity,.45));
 }
 body.has-bg .wrap{position:relative;z-index:1}
 
@@ -2202,11 +2198,11 @@ footer{
 </style>
 </head>
 <?php
-  $bgBlurPct = (int)($dashCfg['bg_blur'] ?? 10);
-  $bgBright  = (int)($dashCfg['bg_brightness'] ?? 55);
-  $bgBlurPx  = round($bgBlurPct * 0.2, 1);
-  $bgDim     = round((100 - $bgBright) / 100, 2);
-?><body<?php if ($hasBgAny): ?> class="has-bg <?= $hasBgPreset ? 'bg-preset' : 'bg-custom' ?>" style="--bg-blur:<?= $bgBlurPx ?>px;--bg-overlay-opacity:<?= $bgDim ?>"<?php endif; ?>>
+  $bgBlurPct  = (int)($dashCfg['bg_blur'] ?? 0);
+  $bgBright   = (int)($dashCfg['bg_brightness'] ?? 28);
+  $bgBlurPx   = round($bgBlurPct * 0.2, 1);
+  $bgBrightV  = round($bgBright / 50, 2);
+?><body<?php if ($hasBgAny): ?> class="has-bg <?= $hasBgPreset ? 'bg-preset' : 'bg-custom' ?>" style="--bg-blur:<?= $bgBlurPx ?>px;--bg-brightness:<?= $bgBrightV ?>"<?php endif; ?>>
 <div class="wrap">
 
   <!-- ==================== HEADER ==================== -->
@@ -2471,7 +2467,7 @@ footer{
         <input type="hidden" name="bg_blur" value="<?= $sBgBlur ?>">
         <label class="settings-label"><?= $t['bg_brightness'] ?></label>
         <div style="display:flex;align-items:center;gap:.5rem">
-          <input type="range" name="bg_brightness" min="0" max="100" value="<?= $sBgBright ?>" style="width:110px;accent-color:var(--accent)" oninput="document.body.style.setProperty('--bg-overlay-opacity',(100-this.value)/100);this.nextElementSibling.textContent=this.value+'%'" onchange="this.form.submit()">
+          <input type="range" name="bg_brightness" min="0" max="100" value="<?= $sBgBright ?>" style="width:110px;accent-color:var(--accent)" oninput="document.body.style.setProperty('--bg-brightness',this.value/50);this.nextElementSibling.textContent=this.value+'%'" onchange="this.form.submit()">
           <span style="font-size:.75rem;color:var(--text-muted);min-width:30px"><?= $sBgBright ?>%</span>
         </div>
       </form>
