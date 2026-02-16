@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.60');
+define('WEBDASH_VERSION', '1.61');
 
 // --- Sprache / Language ---
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
@@ -36,7 +36,7 @@ $t = $lang === 'de' ? [
     'no_apps'=>'Aktuell sind keine Anwendungen verf&uuml;gbar.',
     'apps_count'=>'%d von %d Anwendungen online',
     'open'=>'&Ouml;ffnen','admin'=>'Admin',
-    'online'=>'Online','blocked'=>'Gesperrt','error'=>'Fehler','offline'=>'Offline',
+    'online'=>'Online','blocked'=>'Gesperrt','error'=>'Fehler','offline'=>'Offline','maintenance'=>'Wartung',
     'settings'=>'Einstellungen','logo_dark'=>'Logo (Dunkel)','logo_light'=>'Logo (Hell)',
     'change'=>'&Auml;ndern','upload_btn'=>'Hochladen','remove'=>'Entfernen',
     'scan_dir'=>'Scan-Verzeichnis','save'=>'Speichern','check_update'=>'Update pr&uuml;fen',
@@ -99,7 +99,7 @@ $t = $lang === 'de' ? [
     'no_apps'=>'No applications available.',
     'apps_count'=>'%d of %d applications online',
     'open'=>'Open','admin'=>'Admin',
-    'online'=>'Online','blocked'=>'Blocked','error'=>'Error','offline'=>'Offline',
+    'online'=>'Online','blocked'=>'Blocked','error'=>'Error','offline'=>'Offline','maintenance'=>'Maintenance',
     'settings'=>'Settings','logo_dark'=>'Logo (Dark)','logo_light'=>'Logo (Light)',
     'change'=>'Change','upload_btn'=>'Upload','remove'=>'Remove',
     'scan_dir'=>'Scan Directory','save'=>'Save','check_update'=>'Check for updates',
@@ -252,6 +252,7 @@ function dashConfig(): array {
 function saveDashConfig(array $cfg): void {
     file_put_contents(DASH_CONFIG, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
+
 
 // --- Startup-Log ---
 $_startupLog = [];
@@ -1002,6 +1003,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_project_desc']) 
         } else {
             unset($cfg['project_titles'][$projName]);
         }
+        // Wartungsmodus / Maintenance mode
+        if (!isset($cfg['project_maintenance'])) $cfg['project_maintenance'] = [];
+        if (!empty($_POST['project_maintenance'])) {
+            $cfg['project_maintenance'][$projName] = true;
+        } else {
+            unset($cfg['project_maintenance'][$projName]);
+        }
         // Projekt-Logo Upload (Dark + Light)
         $logoAllowed = ['image/png'=>'png','image/jpeg'=>'jpg','image/svg+xml'=>'svg','image/webp'=>'webp','image/gif'=>'gif'];
         $safeName = basename($projName);
@@ -1596,6 +1604,7 @@ if (!$needsSetup && $dockerMode) {
         if (!empty($dashCfg['project_icons'][$dn])) $_dp['icon'] = $dashCfg['project_icons'][$dn];
         if (!empty($dashCfg['project_logo_dark_ext'][$dn])) $_dp['logo_dark_ext'] = $dashCfg['project_logo_dark_ext'][$dn];
         if (!empty($dashCfg['project_logo_light_ext'][$dn])) $_dp['logo_light_ext'] = $dashCfg['project_logo_light_ext'][$dn];
+        if (!empty($dashCfg['project_maintenance'][$dn])) $_dp['status'] = 'maintenance';
     }
     unset($_dp);
     // Zusätzlich Verzeichnis scannen wenn WEBDASH_SCAN_DIR gesetzt
@@ -1637,6 +1646,7 @@ if (!$needsSetup && $dockerMode) {
             if (!empty($dashCfg['project_icons'][$dir])) $project['icon'] = $dashCfg['project_icons'][$dir];
             if (!empty($dashCfg['project_logo_dark_ext'][$dir])) $project['logo_dark_ext'] = $dashCfg['project_logo_dark_ext'][$dir];
             if (!empty($dashCfg['project_logo_light_ext'][$dir])) $project['logo_light_ext'] = $dashCfg['project_logo_light_ext'][$dir];
+            if (!empty($dashCfg['project_maintenance'][$dir])) $project['status'] = 'maintenance';
             $projects[] = $project;
         }
     }
@@ -1686,6 +1696,7 @@ if (!$needsSetup && $dockerMode) {
         if (!empty($dashCfg['project_icons'][$dir])) $project['icon'] = $dashCfg['project_icons'][$dir];
         if (!empty($dashCfg['project_logo_dark_ext'][$dir])) $project['logo_dark_ext'] = $dashCfg['project_logo_dark_ext'][$dir];
         if (!empty($dashCfg['project_logo_light_ext'][$dir])) $project['logo_light_ext'] = $dashCfg['project_logo_light_ext'][$dir];
+        if (!empty($dashCfg['project_maintenance'][$dir])) $project['status'] = 'maintenance';
         $projects[] = $project;
     }
 }
@@ -1712,7 +1723,7 @@ foreach (($dashCfg['manual_links'] ?? []) as $i => $ml) {
         'icon'         => $dashCfg['project_icons'][$mlName] ?? '',
         'logo_dark_ext'  => $dashCfg['project_logo_dark_ext'][$mlName] ?? '',
         'logo_light_ext' => $dashCfg['project_logo_light_ext'][$mlName] ?? '',
-        'status'       => match(true) { $mlCode>=200&&$mlCode<400=>'online', $mlCode===403=>'gesperrt', $mlCode>=400=>'fehler', default=>'offline' },
+        'status'       => !empty($dashCfg['project_maintenance'][$mlName]) ? 'maintenance' : match(true) { $mlCode>=200&&$mlCode<400=>'online', $mlCode===403=>'gesperrt', $mlCode>=400=>'fehler', default=>'offline' },
         'statusCode'   => $mlCode,
         'manual'       => true,
         'manual_index' => $i,
@@ -1801,13 +1812,13 @@ function getSystemResources(): array {
     return compact('loadPercent', 'load', 'cpuCores', 'ramTotal', 'ramUsed', 'ramFree', 'ramPercent', 'diskTotal', 'diskUsed', 'diskFree', 'diskPercent');
 }
 function statusDot(string $s): string {
-    $c = match($s) { 'online'=>'#10b981','gesperrt'=>'#f59e0b','fehler'=>'#ef4444',default=>'#94a3b8' };
+    $c = match($s) { 'online'=>'#10b981','gesperrt'=>'#f59e0b','fehler'=>'#ef4444','maintenance'=>'#f59e0b',default=>'#94a3b8' };
     $pulse = $s === 'online' ? 'animation:pulse 2s infinite;' : '';
     return "<span class=\"sdot\" style=\"background:$c;$pulse\"></span>";
 }
 function statusLabel(string $s): string {
     global $t;
-    return match($s) { 'online'=>$t['online'],'gesperrt'=>$t['blocked'],'fehler'=>$t['error'],default=>$t['offline'] };
+    return match($s) { 'online'=>$t['online'],'gesperrt'=>$t['blocked'],'fehler'=>$t['error'],'maintenance'=>$t['maintenance'],default=>$t['offline'] };
 }
 $onlineProjects = array_filter($projects, fn($p) => $p['status'] === 'online');
 
@@ -1946,17 +1957,17 @@ if (file_exists($favDark) && file_exists($favLight)): ?>
   --mono:'JetBrains Mono','Fira Code',monospace;
 }
 :root.light{
-  --bg:#f0f4f8;--bg-end:#f0f4f8;--surface:#ffffff;--surface-2:#e8edf3;
-  --border:rgba(0,80,120,.1);--border-hover:rgba(0,140,200,.25);
-  --accent:#0284c7;--accent-dim:rgba(2,132,199,.1);
+  --bg:#dce2ea;--bg-end:#dce2ea;--surface:#eaeef4;--surface-2:#d2d9e3;
+  --border:rgba(0,80,120,.14);--border-hover:rgba(0,140,200,.28);
+  --accent:#0284c7;--accent-dim:rgba(2,132,199,.12);
   --success:#059669;--warn:#d97706;--danger:#dc2626;
-  --text:#1e293b;--text-muted:#64748b;--text-dim:#94a3b8;
-  --shadow:rgba(0,0,0,.06);--dot-color:rgba(0,80,120,.04);--bar-track:#e2e8f0;
+  --text:#1e293b;--text-muted:#4b5e75;--text-dim:#7a8da3;
+  --shadow:rgba(0,0,0,.09);--dot-color:rgba(0,80,120,.05);--bar-track:#cdd5e0;
 }
 .light body{
   background-image:
     radial-gradient(circle at 1px 1px,var(--dot-color) 1px,transparent 0),
-    linear-gradient(145deg, #f0f4f8 0%, #f0f4f8 100%);
+    linear-gradient(145deg, #dce2ea 0%, #d4dae4 100%);
 }
 
 html{font-size:15px}
@@ -2133,6 +2144,7 @@ header{
   animation:fadeUp .6s ease both;display:grid;grid-template-columns:1fr auto;grid-template-rows:1fr;
 }
 .proj-link{display:grid;grid-template-rows:auto 1fr auto;text-decoration:none;color:inherit;padding:1.25rem;min-width:0;gap:0}
+.proj-link.proj-maintenance{pointer-events:none;opacity:.55}
 .proj::before{
   content:'';position:absolute;top:0;left:0;right:0;height:3px;
   background:linear-gradient(90deg,transparent,var(--accent),transparent);
@@ -2507,7 +2519,7 @@ footer{
           <div class="uproj-desc"><?= renderDesc($proj['description']) ?></div>
         <?php endif; ?>
         <div class="uproj-foot">
-          <span class="uproj-status" style="color:<?= match($proj['status']){'online'=>'var(--success)','gesperrt'=>'var(--warn)','fehler'=>'var(--danger)',default=>'var(--text-dim)'} ?>">
+          <span class="uproj-status" style="color:<?= match($proj['status']){'online'=>'var(--success)','gesperrt'=>'var(--warn)','fehler'=>'var(--danger)','maintenance'=>'var(--warn)',default=>'var(--text-dim)'} ?>">
             <?= statusDot($proj['status']) ?>
             <?= statusLabel($proj['status']) ?>
           </span>
@@ -2969,9 +2981,11 @@ footer{
   <div class="section-title"><?= $dockerMode ? $t['docker_containers'] : $t['projects'] ?> (<?= count($projects) ?>)</div>
   <?php if (!empty($projects)): ?>
   <div class="projects">
-    <?php foreach ($projects as $i => $proj): ?>
+    <?php foreach ($projects as $i => $proj):
+      $projOnline = $proj['status'] !== 'maintenance';
+    ?>
     <div class="proj" style="animation-delay:<?= 0.1 + $i * 0.08 ?>s">
-      <a href="<?= htmlspecialchars($proj['url']) ?>" class="proj-link" target="_blank" rel="noopener">
+      <a href="<?= $projOnline ? htmlspecialchars($proj['url']) : '#' ?>" class="proj-link<?= $projOnline ? '' : ' proj-maintenance' ?>" <?= $projOnline ? 'target="_blank" rel="noopener"' : '' ?>>
         <div class="proj-head">
           <?php $hasLogo = !empty($proj['logo_dark_ext']) || !empty($proj['logo_light_ext']); ?>
           <div class="proj-icon<?= $hasLogo ? ' has-logo' : '' ?>"><?php if ($hasLogo): ?><img src="/?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=dark" alt="" class="proj-logo-dark"><img src="/?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=light" alt="" class="proj-logo-light"><?php else: ?><?= !empty($proj['icon']) ? $proj['icon'] : (!empty($proj['docker']) ? "\xf0\x9f\x90\xb3" : match($proj['type']) { 'Node.js'=>"\xe2\xac\xa2",'Python'=>"\xf0\x9f\x90\x8d",'Link'=>"\xf0\x9f\x94\x97",default=>"\xe2\x9a\x99" }) ?><?php endif; ?></div>
@@ -2993,7 +3007,7 @@ footer{
             <?= date('d.m.Y H:i', $proj['lastModified']) ?>
           </span>
           <?php endif; ?>
-          <span class="proj-status" style="color:<?= match($proj['status']){'online'=>'var(--success)','gesperrt'=>'var(--warn)','fehler'=>'var(--danger)',default=>'var(--text-dim)'} ?>">
+          <span class="proj-status" style="color:<?= match($proj['status']){'online'=>'var(--success)','gesperrt'=>'var(--warn)','fehler'=>'var(--danger)','maintenance'=>'var(--warn)',default=>'var(--text-dim)'} ?>">
             <?= statusDot($proj['status']) ?>
             <?= statusLabel($proj['status']) ?>
           </span>
@@ -3001,7 +3015,7 @@ footer{
         </div>
       </a>
       <div class="proj-actions">
-        <button type="button" class="proj-edit-btn" onclick="editProjectDesc(<?= htmlspecialchars(json_encode($proj['name']), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['description'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['icon'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['display_name'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode(!empty($proj['logo_dark_ext']) ? $proj['logo_dark_ext'] : ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode(!empty($proj['logo_light_ext']) ? $proj['logo_light_ext'] : ''), ENT_QUOTES) ?>)" title="<?= $t['project_edit'] ?>">
+        <button type="button" class="proj-edit-btn" onclick="editProjectDesc(<?= htmlspecialchars(json_encode($proj['name']), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['description'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['icon'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['display_name'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode(!empty($proj['logo_dark_ext']) ? $proj['logo_dark_ext'] : ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode(!empty($proj['logo_light_ext']) ? $proj['logo_light_ext'] : ''), ENT_QUOTES) ?>,<?= $proj['status'] === 'maintenance' ? 'true' : 'false' ?>)" title="<?= $t['project_edit'] ?>">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         </button>
         <?php if (!empty($proj['manual'])): ?>
@@ -3086,6 +3100,7 @@ footer{
         </div>
         <input type="hidden" name="project_desc" id="descFormDesc">
         <div class="rte-editor" id="descEditor" contenteditable="true" data-placeholder="<?= $lang === 'de' ? 'Beschreibung eingeben...' : 'Enter description...' ?>"></div>
+        <label style="display:flex;align-items:center;gap:.5rem;margin:.75rem 0;font-size:.8rem;cursor:pointer"><input type="checkbox" name="project_maintenance" id="descFormMaintenance" value="1"> <?= $lang === 'de' ? 'Wartungsmodus' : 'Maintenance mode' ?></label>
         <button type="submit" class="modal-submit"><?= $t['save'] ?></button>
       </form>
       <button class="modal-close" onclick="closeDescModal()"><?= $t['cancel'] ?></button>
@@ -3286,7 +3301,7 @@ function _checkAnyLogo(){
   var l=document.getElementById('projLogo_light_has').style.display!=='none';
   toggleIconPicker(d||l);
 }
-function editProjectDesc(name,current,icon,title,logoDarkExt,logoLightExt){
+function editProjectDesc(name,current,icon,title,logoDarkExt,logoLightExt,maintenance){
   _projName=name;
   document.getElementById('descFormName').value=name;
   document.getElementById('descFormTitle').value=title||name;
@@ -3294,6 +3309,7 @@ function editProjectDesc(name,current,icon,title,logoDarkExt,logoLightExt){
   document.getElementById('descFormIcon').value=icon||'';
   document.getElementById('descModalName').textContent=name;
   document.getElementById('descEditor').innerHTML=current?md2html(current):'';
+  document.getElementById('descFormMaintenance').checked=!!maintenance;
   document.querySelectorAll('#descForm input[type=file]').forEach(function(i){i.value='';});
   ['dark','light'].forEach(function(v){
     var ext=v==='dark'?logoDarkExt:logoLightExt;
@@ -3339,24 +3355,30 @@ function removeProjLogo(variant){
     _checkAnyLogo();
   });
 }
-// Drag & Drop für beide Logo-Varianten
+// Drag & Drop für beide Logo-Varianten (none + has)
 (function(){
   var allowed=['image/png','image/jpeg','image/svg+xml','image/webp','image/gif'];
+  function handleDrop(v,targetEl,e){
+    e.preventDefault();e.stopPropagation();
+    if(!e.dataTransfer.files.length)return;
+    var file=e.dataTransfer.files[0];
+    if(!file||allowed.indexOf(file.type)===-1||file.size>2*1024*1024)return;
+    var inp=targetEl.querySelector('input[type=file]');
+    var dt=new DataTransfer();dt.items.add(file);inp.files=dt.files;
+    previewProjLogo(v,inp);
+  }
   ['dark','light'].forEach(function(v){
     var noneEl=document.getElementById('projLogo_'+v+'_none');
+    var hasEl=document.getElementById('projLogo_'+v+'_has');
     if(!noneEl)return;
     noneEl.addEventListener('dragover',function(e){e.preventDefault();e.stopPropagation();noneEl.querySelector('label').style.borderColor='var(--accent)';});
     noneEl.addEventListener('dragleave',function(e){e.preventDefault();e.stopPropagation();noneEl.querySelector('label').style.borderColor='var(--border)';});
-    noneEl.addEventListener('drop',function(e){
-      e.preventDefault();e.stopPropagation();
-      noneEl.querySelector('label').style.borderColor='var(--border)';
-      if(!e.dataTransfer.files.length)return;
-      var file=e.dataTransfer.files[0];
-      if(!file||allowed.indexOf(file.type)===-1||file.size>2*1024*1024)return;
-      var inp=noneEl.querySelector('input[type=file]');
-      var dt=new DataTransfer();dt.items.add(file);inp.files=dt.files;
-      previewProjLogo(v,inp);
-    });
+    noneEl.addEventListener('drop',function(e){noneEl.querySelector('label').style.borderColor='var(--border)';handleDrop(v,noneEl,e);});
+    if(hasEl){
+      hasEl.addEventListener('dragover',function(e){e.preventDefault();e.stopPropagation();hasEl.style.outline='2px dashed var(--accent)';hasEl.style.outlineOffset='2px';});
+      hasEl.addEventListener('dragleave',function(e){e.preventDefault();e.stopPropagation();hasEl.style.outline='';hasEl.style.outlineOffset='';});
+      hasEl.addEventListener('drop',function(e){hasEl.style.outline='';hasEl.style.outlineOffset='';handleDrop(v,hasEl,e);});
+    }
   });
 })();
 function closeDescModal(){
