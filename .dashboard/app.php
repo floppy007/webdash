@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.63');
+define('WEBDASH_VERSION', '1.64');
 
 // --- Sprache / Language ---
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
@@ -29,7 +29,6 @@ if (isset($_COOKIE['webdash_lang']) && in_array($_COOKIE['webdash_lang'], ['de',
 $t = $lang === 'de' ? [
     'toggle_theme'=>'Hell/Dunkel umschalten','toggle_lang'=>'English','logout'=>'Abmelden',
     'server_home'=>'Server-Startseite',
-    'intro'=>'Hier siehst du alle verf&uuml;gbaren Webanwendungen und Dienste. Klicke auf einen Eintrag um ihn zu &ouml;ffnen.',
     'legend_online'=>'Verf&uuml;gbar &mdash; Anwendung l&auml;uft',
     'legend_offline'=>'Offline &mdash; Nicht erreichbar',
     'legend_error'=>'Fehler &mdash; Anwendung antwortet mit Fehler',
@@ -49,7 +48,7 @@ $t = $lang === 'de' ? [
     'cores'=>'Kerne','used'=>'belegt','free'=>'frei','services'=>'Dienste','projects'=>'Projekte',
     'admin_access'=>'Admin-Zugang','admin_desc'=>'Mit Intranet-Konto anmelden (nur Administratoren)',
     'username'=>'Benutzername','password'=>'Passwort','login'=>'Anmelden','cancel'=>'Abbrechen',
-    'err_creds'=>'Benutzername oder Passwort falsch','err_db'=>'Datenbankverbindung fehlgeschlagen',
+    'err_creds'=>'Benutzername oder Passwort falsch',
     'js_checking'=>'Pr\u00fcfe...','js_available'=>'verf\u00fcgbar!','js_update_now'=>'Jetzt aktualisieren',
     'js_current'=>'webdash ist aktuell','js_conn_err'=>'Verbindungsfehler',
     'js_installing'=>'Update wird installiert...','js_success'=>'erfolgreich! Aktualisiert:',
@@ -59,28 +58,8 @@ $t = $lang === 'de' ? [
     'setup_save'=>'Einrichtung abschlie&szlig;en',
     'pw_mismatch'=>'Passw&ouml;rter stimmen nicht &uuml;berein',
     'pw_short'=>'Passwort zu kurz (min. 4 Zeichen)',
-    'db_config'=>'Datenbank (optional)','db_config_desc'=>'F&uuml;r Login &uuml;ber eine bestehende Benutzer-Datenbank.',
-    'db_host'=>'DB Host','db_name'=>'DB Name','db_user'=>'DB Benutzer','db_pass'=>'DB Passwort',
-    'db_save'=>'Datenbank speichern','db_test_ok'=>'Verbindung erfolgreich (Datenbank und Tabelle bereit)','db_test_fail'=>'Verbindung fehlgeschlagen',
     'admin_pw'=>'Admin-Passwort','admin_pw_change'=>'Passwort &auml;ndern',
-    'users'=>'Benutzer','users_name'=>'Name','users_role'=>'Rolle','users_created'=>'Erstellt',
-    'users_add'=>'Admin anlegen','users_delete'=>'L&ouml;schen','users_delete_confirm'=>'Benutzer wirklich l&ouml;schen?',
-    'users_edit'=>'Bearbeiten','users_save'=>'Speichern',
-    'users_none'=>'Keine Benutzer in der Datenbank','users_no_db'=>'Keine Datenbank konfiguriert',
-    'users_added'=>'Benutzer erfolgreich angelegt','users_deleted'=>'Benutzer gel&ouml;scht',
-    'users_exists'=>'Benutzername existiert bereits','users_new_pw'=>'Neues Passwort (leer = nicht &auml;ndern)',
-    'email'=>'E-Mail',
-    'smtp_config'=>'E-Mail-Versand (SMTP)',
-    'smtp_host'=>'SMTP Host','smtp_port'=>'SMTP Port','smtp_encryption'=>'Verschl&uuml;sselung',
-    'smtp_user'=>'SMTP Benutzer','smtp_pass'=>'SMTP Passwort',
-    'smtp_from'=>'Absender E-Mail','smtp_from_name'=>'Absender Name',
-    'smtp_save'=>'SMTP speichern','smtp_test'=>'Test-E-Mail senden',
-    'smtp_test_ok'=>'Test-E-Mail gesendet','smtp_test_fail'=>'E-Mail-Versand fehlgeschlagen',
-    'tab_general'=>'Allgemein','tab_connections'=>'Datenbank &amp; E-Mail','tab_server'=>'Webseiten &amp; Dienste',
-    'forgot_pw'=>'Passwort vergessen?','forgot_pw_desc'=>'Benutzername oder E-Mail eingeben',
-    'forgot_pw_sent'=>'Falls ein Account existiert, wurde eine E-Mail gesendet',
-    'reset_pw'=>'Passwort zur&uuml;cksetzen','reset_pw_expired'=>'Link abgelaufen oder ung&uuml;ltig',
-    'reset_pw_success'=>'Passwort erfolgreich ge&auml;ndert',
+    'tab_general'=>'Allgemein','tab_server'=>'Webseiten &amp; Dienste',
     'manual_links'=>'Manuelle Webseiten','manual_links_hint'=>'Eigene URLs hinzuf&uuml;gen...',
     'manual_link_name'=>'Name','manual_link_url'=>'URL','manual_link_desc'=>'Beschreibung (optional)',
     'manual_link_add'=>'Link hinzuf&uuml;gen','manual_link_delete_confirm'=>'Link wirklich l&ouml;schen?',
@@ -90,10 +69,28 @@ $t = $lang === 'de' ? [
     'docker_no_containers'=>'Keine Container gefunden','docker_container_id'=>'Container-ID',
     'visible_containers'=>'Sichtbare Container','visible_containers_hint'=>'Container im Dashboard ein-/ausblenden',
     'google_search'=>'Google-Suche',
+    'bg_image'=>'Hintergrundbild','bg_blur'=>'Glaseffekt','bg_brightness'=>'Helligkeit',
+    'show_stats'=>'System-Info','show_resources'=>'Auslastung','show_services'=>'Dienste',
+    'smtp_config'=>'E-Mail-Versand (SMTP)',
+    'smtp_host'=>'SMTP Host','smtp_port'=>'SMTP Port','smtp_encryption'=>'Verschl&uuml;sselung',
+    'smtp_user'=>'SMTP Benutzer','smtp_pass'=>'SMTP Passwort',
+    'smtp_from'=>'Absender E-Mail','smtp_from_name'=>'Absender Name',
+    'smtp_save'=>'SMTP speichern','smtp_test'=>'Test-E-Mail senden',
+    'smtp_test_ok'=>'Test-E-Mail gesendet','smtp_test_fail'=>'E-Mail-Versand fehlgeschlagen',
+    'forgot_pw'=>'Passwort vergessen?','forgot_pw_desc'=>'E-Mail-Adresse eingeben',
+    'forgot_pw_sent'=>'Falls die E-Mail hinterlegt ist, wurde ein Reset-Link gesendet',
+    'reset_pw'=>'Passwort zur&uuml;cksetzen','reset_pw_expired'=>'Link abgelaufen oder ung&uuml;ltig',
+    'reset_pw_success'=>'Passwort erfolgreich ge&auml;ndert',
+    'email'=>'E-Mail',
+    'users'=>'Benutzer','users_add'=>'Benutzer hinzuf&uuml;gen','users_name'=>'Name',
+    'users_save'=>'Speichern','users_delete'=>'L&ouml;schen','users_delete_confirm'=>'Benutzer wirklich l\u00f6schen?',
+    'users_added'=>'Benutzer angelegt','users_exists'=>'Benutzername existiert bereits',
+    'users_none'=>'Noch keine Benutzer angelegt',
+    'users_new_pw'=>'Neues Passwort (leer = nicht &auml;ndern)',
+    'tab_email_users'=>'E-Mail &amp; Benutzer',
 ] : [
     'toggle_theme'=>'Toggle theme','toggle_lang'=>'Deutsch','logout'=>'Logout',
     'server_home'=>'Server Overview',
-    'intro'=>'Here you can see all available web applications and services. Click an entry to open it.',
     'legend_online'=>'Available &mdash; Application is running',
     'legend_offline'=>'Offline &mdash; Not reachable',
     'legend_error'=>'Error &mdash; Application responds with error',
@@ -113,7 +110,7 @@ $t = $lang === 'de' ? [
     'cores'=>'Cores','used'=>'used','free'=>'free','services'=>'Services','projects'=>'Projects',
     'admin_access'=>'Admin Access','admin_desc'=>'Sign in with Intranet account (admins only)',
     'username'=>'Username','password'=>'Password','login'=>'Sign in','cancel'=>'Cancel',
-    'err_creds'=>'Invalid username or password','err_db'=>'Database connection failed',
+    'err_creds'=>'Invalid username or password',
     'js_checking'=>'Checking...','js_available'=>'available!','js_update_now'=>'Update now',
     'js_current'=>'webdash is up to date','js_conn_err'=>'Connection error',
     'js_installing'=>'Installing update...','js_success'=>'successful! Updated:',
@@ -123,28 +120,8 @@ $t = $lang === 'de' ? [
     'setup_save'=>'Complete setup',
     'pw_mismatch'=>'Passwords do not match',
     'pw_short'=>'Password too short (min. 4 characters)',
-    'db_config'=>'Database (optional)','db_config_desc'=>'For login via an existing user database.',
-    'db_host'=>'DB Host','db_name'=>'DB Name','db_user'=>'DB User','db_pass'=>'DB Password',
-    'db_save'=>'Save database','db_test_ok'=>'Connection successful (database and table ready)','db_test_fail'=>'Connection failed',
     'admin_pw'=>'Admin Password','admin_pw_change'=>'Change password',
-    'users'=>'Users','users_name'=>'Name','users_role'=>'Role','users_created'=>'Created',
-    'users_add'=>'Add admin','users_delete'=>'Delete','users_delete_confirm'=>'Really delete this user?',
-    'users_edit'=>'Edit','users_save'=>'Save',
-    'users_none'=>'No users in the database','users_no_db'=>'No database configured',
-    'users_added'=>'User created successfully','users_deleted'=>'User deleted',
-    'users_exists'=>'Username already exists','users_new_pw'=>'New password (empty = no change)',
-    'email'=>'Email',
-    'smtp_config'=>'Email Sending (SMTP)',
-    'smtp_host'=>'SMTP Host','smtp_port'=>'SMTP Port','smtp_encryption'=>'Encryption',
-    'smtp_user'=>'SMTP User','smtp_pass'=>'SMTP Password',
-    'smtp_from'=>'From Email','smtp_from_name'=>'From Name',
-    'smtp_save'=>'Save SMTP','smtp_test'=>'Send test email',
-    'smtp_test_ok'=>'Test email sent','smtp_test_fail'=>'Email sending failed',
-    'tab_general'=>'General','tab_connections'=>'Database &amp; Email','tab_server'=>'Websites &amp; Services',
-    'forgot_pw'=>'Forgot password?','forgot_pw_desc'=>'Enter username or email',
-    'forgot_pw_sent'=>'If an account exists, an email has been sent',
-    'reset_pw'=>'Reset password','reset_pw_expired'=>'Link expired or invalid',
-    'reset_pw_success'=>'Password changed successfully',
+    'tab_general'=>'General','tab_server'=>'Websites &amp; Services',
     'manual_links'=>'Manual Websites','manual_links_hint'=>'Add custom URLs...',
     'manual_link_name'=>'Name','manual_link_url'=>'URL','manual_link_desc'=>'Description (optional)',
     'manual_link_add'=>'Add link','manual_link_delete_confirm'=>'Really delete this link?',
@@ -154,6 +131,25 @@ $t = $lang === 'de' ? [
     'docker_no_containers'=>'No containers found','docker_container_id'=>'Container ID',
     'visible_containers'=>'Visible Containers','visible_containers_hint'=>'Show/hide containers on the dashboard',
     'google_search'=>'Google Search',
+    'bg_image'=>'Background Image','bg_blur'=>'Glass Effect','bg_brightness'=>'Brightness',
+    'show_stats'=>'System Info','show_resources'=>'Resources','show_services'=>'Services',
+    'smtp_config'=>'Email Sending (SMTP)',
+    'smtp_host'=>'SMTP Host','smtp_port'=>'SMTP Port','smtp_encryption'=>'Encryption',
+    'smtp_user'=>'SMTP User','smtp_pass'=>'SMTP Password',
+    'smtp_from'=>'From Email','smtp_from_name'=>'From Name',
+    'smtp_save'=>'Save SMTP','smtp_test'=>'Send test email',
+    'smtp_test_ok'=>'Test email sent','smtp_test_fail'=>'Email sending failed',
+    'forgot_pw'=>'Forgot password?','forgot_pw_desc'=>'Enter your email address',
+    'forgot_pw_sent'=>'If the email is registered, a reset link has been sent',
+    'reset_pw'=>'Reset password','reset_pw_expired'=>'Link expired or invalid',
+    'reset_pw_success'=>'Password changed successfully',
+    'email'=>'Email',
+    'users'=>'Users','users_add'=>'Add user','users_name'=>'Name',
+    'users_save'=>'Save','users_delete'=>'Delete','users_delete_confirm'=>'Really delete this user?',
+    'users_added'=>'User created','users_exists'=>'Username already exists',
+    'users_none'=>'No users yet',
+    'users_new_pw'=>'New password (empty = no change)',
+    'tab_email_users'=>'Email &amp; Users',
 ];
 
 // --- Dashboard-Konfiguration ---
@@ -161,6 +157,13 @@ define('DASH_DIR',    __DIR__);
 define('DASH_CONFIG', DASH_DIR . '/config.json');
 define('DASH_LOGO_DARK',  DASH_DIR . '/logo-dark');
 define('DASH_LOGO_LIGHT', DASH_DIR . '/logo-light');
+define('DASH_BG_IMAGE',    DASH_DIR . '/bg-image');
+define('DASH_WALLPAPERS',  DASH_DIR . '/wallpapers');
+// Vorinstallierte Hintergrundbilder / Preset wallpapers (hell=Light, dunkel=Dark)
+define('DASH_PRESET_WALLPAPERS', [
+    'light' => ['file' => 'mountain-lake.jpg', 'credit' => 'Eberhard Grossgasteiger', 'source' => 'Pexels', 'url' => 'https://www.pexels.com/photo/629167/'],
+    'dark'  => ['file' => 'aerial-forest.jpg', 'credit' => 'Sindre Str&oslash;m',     'source' => 'Pexels', 'url' => 'https://www.pexels.com/photo/1144176/'],
+]);
 define('DASH_APP_LOGO_DARK', DASH_DIR . '/app-logo-dark.png');
 define('DASH_APP_LOGO_LIGHT', DASH_DIR . '/app-logo-light.png');
 define('DASH_PROJECT_LOGOS', DASH_DIR . '/project-logos');
@@ -296,57 +299,6 @@ $_startupLog = [];
     }
 })();
 
-// --- Migration: admin_pass → users-Tabelle ---
-(function() {
-    global $_startupLog;
-    $cfg = dashConfig();
-    if (empty($cfg['admin_pass'])) {
-        $_startupLog[] = ['info', 'Migration admin_pass: übersprungen (kein admin_pass in config.json)'];
-        return;
-    }
-    $db = getDashboardDB();
-    if (!$db) {
-        $_startupLog[] = ['warn', 'Migration admin_pass: übersprungen (keine DB-Verbindung)'];
-        return;
-    }
-    try {
-        $stmt = $db->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-        $stmt->execute(['admin']);
-        if (!$stmt->fetch()) {
-            $ins = $db->prepare('INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)');
-            $ins->execute(['admin', $cfg['admin_pass'], 'Admin', 'admin']);
-            $_startupLog[] = ['ok', 'Migration admin_pass: Admin-User in DB erstellt'];
-        } else {
-            $_startupLog[] = ['info', 'Migration admin_pass: User "admin" existiert bereits in DB'];
-        }
-        unset($cfg['admin_pass']);
-        saveDashConfig($cfg);
-    } catch (Exception $e) {
-        $_startupLog[] = ['err', 'Migration admin_pass: ' . $e->getMessage()];
-    }
-})();
-
-// --- DB-Status für Log ---
-(function() {
-    global $_startupLog;
-    $db = getDashboardDB();
-    if ($db) {
-        try {
-            $cnt = $db->query('SELECT COUNT(*) FROM users')->fetchColumn();
-            $_startupLog[] = ['info', 'DB verbunden — ' . $cnt . ' User in der Datenbank'];
-        } catch (Exception $e) {
-            $_startupLog[] = ['err', 'DB verbunden, aber users-Tabelle Fehler: ' . $e->getMessage()];
-        }
-    } else {
-        $cfg = dashConfig();
-        if (!empty($cfg['db_name'])) {
-            $_startupLog[] = ['warn', 'DB konfiguriert aber Verbindung fehlgeschlagen'];
-        } else {
-            $_startupLog[] = ['info', 'Keine DB konfiguriert'];
-        }
-    }
-})();
-
 // --- Auto-Repair: fehlende App-Logos/Favicons von GitHub nachladen ---
 (function() {
     global $_startupLog;
@@ -409,7 +361,7 @@ if (isset($_GET['asset']) && $_GET['asset'] === 'project-logo' && isset($_GET['n
 }
 
 // --- Logo ausliefern (/?asset=logo-dark / /?asset=logo-light / /?asset=app-logo / /?asset=app-logo-wide) ---
-if (isset($_GET['asset']) && in_array($_GET['asset'], ['logo-dark', 'logo-light', 'favicon-dark', 'favicon-light', 'app-logo-dark', 'app-logo-light'], true)) {
+if (isset($_GET['asset']) && in_array($_GET['asset'], ['logo-dark', 'logo-light', 'favicon-dark', 'favicon-light', 'app-logo-dark', 'app-logo-light', 'bg-image', 'wallpaper'], true)) {
     $assetName = $_GET['asset'];
     if ($assetName === 'favicon-dark' || $assetName === 'favicon-light') {
         $file = DASH_DIR . '/' . $assetName . '.png';
@@ -424,6 +376,32 @@ if (isset($_GET['asset']) && in_array($_GET['asset'], ['logo-dark', 'logo-light'
         $file = $assetName === 'app-logo-light' ? DASH_APP_LOGO_LIGHT : DASH_APP_LOGO_DARK;
         if (file_exists($file)) {
             header('Content-Type: image/png');
+            header('Cache-Control: public, max-age=86400');
+            readfile($file);
+        } else {
+            http_response_code(404);
+        }
+    } elseif ($assetName === 'wallpaper') {
+        $theme = $_GET['theme'] ?? 'dark';
+        if (isset(DASH_PRESET_WALLPAPERS[$theme])) {
+            $file = DASH_WALLPAPERS . '/' . DASH_PRESET_WALLPAPERS[$theme]['file'];
+            if (file_exists($file)) {
+                header('Content-Type: image/jpeg');
+                header('Cache-Control: public, max-age=604800');
+                readfile($file);
+            } else {
+                http_response_code(404);
+            }
+        } else {
+            http_response_code(404);
+        }
+    } elseif ($assetName === 'bg-image') {
+        $cfg = dashConfig();
+        $ext = $cfg['bg_image_ext'] ?? '';
+        $file = DASH_BG_IMAGE . '.' . $ext;
+        if ($ext && file_exists($file)) {
+            $mime = match($ext) { 'svg'=>'image/svg+xml','png'=>'image/png','jpg','jpeg'=>'image/jpeg','webp'=>'image/webp','gif'=>'image/gif', default=>'application/octet-stream' };
+            header('Content-Type: ' . $mime);
             header('Cache-Control: public, max-age=86400');
             readfile($file);
         } else {
@@ -447,99 +425,6 @@ if (isset($_GET['asset']) && in_array($_GET['asset'], ['logo-dark', 'logo-light'
     exit;
 }
 
-// --- DB testen/erstellen ---
-function testOrCreateDB(string $host, string $name, string $user, string $pass): array {
-    global $lang;
-    $host = $host ?: 'localhost';
-    $user = $user ?: 'root';
-    $safeName = preg_replace('/[^a-zA-Z0-9_]/', '', $name);
-    // 1. Versuche direkt zu verbinden
-    try {
-        $dsn = 'mysql:host=' . $host . ';dbname=' . $safeName . ';charset=utf8mb4';
-        $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-    } catch (PDOException $e) {
-        // 2. DB existiert nicht → versuche sie zu erstellen
-        if (str_contains($e->getMessage(), 'Unknown database') || $e->getCode() == 1049) {
-            try {
-                $pdo = new PDO('mysql:host=' . $host . ';charset=utf8mb4', $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-                $pdo->exec('CREATE DATABASE `' . $safeName . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-                $pdo->exec('USE `' . $safeName . '`');
-            } catch (PDOException $e2) {
-                $hint = $lang === 'de'
-                    ? 'Die Datenbank "' . $safeName . '" existiert nicht und konnte nicht automatisch erstellt werden. Bitte erstellen Sie die Datenbank zuerst manuell: CREATE DATABASE `' . $safeName . '`;'
-                    : 'The database "' . $safeName . '" does not exist and could not be created automatically. Please create the database manually first: CREATE DATABASE `' . $safeName . '`;';
-                return ['ok' => false, 'error' => $hint];
-            }
-        } else {
-            return ['ok' => false, 'error' => $e->getMessage()];
-        }
-    }
-    // 3. users-Tabelle anlegen falls nicht vorhanden
-    try {
-        $pdo->exec('CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            username VARCHAR(100) NOT NULL UNIQUE,
-            password VARCHAR(255) NOT NULL,
-            name VARCHAR(150) DEFAULT NULL,
-            email VARCHAR(150) DEFAULT NULL,
-            role ENUM(\'admin\',\'user\') NOT NULL DEFAULT \'user\',
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
-    } catch (PDOException $e) {
-        // Tabelle konnte nicht erstellt werden, kein harter Fehler
-    }
-    return ['ok' => true, 'pdo' => $pdo];
-}
-
-// --- DB-Verbindung (lazy, aus config.json) ---
-function getDashboardDB(): ?PDO {
-    static $pdo = null;
-    if ($pdo === null) {
-        $cfg  = dashConfig();
-        $host = getenv('WEBDASH_DB_HOST') ?: ($cfg['db_host'] ?? '');
-        $name = getenv('WEBDASH_DB_NAME') ?: ($cfg['db_name'] ?? '');
-        $user = getenv('WEBDASH_DB_USER') ?: ($cfg['db_user'] ?? '');
-        $pass = getenv('WEBDASH_DB_PASS') !== false ? getenv('WEBDASH_DB_PASS') : ($cfg['db_pass'] ?? '');
-
-        if (!$name) { $pdo = false; return null; }
-
-        try {
-            $dsn = 'mysql:host=' . ($host ?: 'localhost') . ';dbname=' . $name . ';charset=utf8mb4';
-            $pdo = new PDO($dsn, $user ?: 'root', $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-        } catch (PDOException $e) {
-            $pdo = false;
-            return null;
-        }
-        // users-Tabelle sicherstellen (separater try-catch, damit DB-Verbindung erhalten bleibt)
-        try {
-            $pdo->exec('CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(100) NOT NULL UNIQUE,
-                password VARCHAR(255) NOT NULL,
-                name VARCHAR(150) DEFAULT NULL,
-                email VARCHAR(150) DEFAULT NULL,
-                role ENUM(\'admin\',\'user\') NOT NULL DEFAULT \'user\',
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
-        } catch (PDOException $e) {
-            // Tabelle konnte nicht erstellt werden — kein harter Fehler
-        }
-        // Migration: email-Spalte nachrüsten
-        try { $pdo->exec('ALTER TABLE users ADD COLUMN email VARCHAR(150) DEFAULT NULL AFTER name'); } catch (PDOException $e) {}
-        // password_resets-Tabelle
-        try {
-            $pdo->exec('CREATE TABLE IF NOT EXISTS password_resets (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                token VARCHAR(128) NOT NULL UNIQUE,
-                expires_at DATETIME NOT NULL,
-                INDEX(token)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
-        } catch (PDOException $e) {}
-    }
-    return $pdo ?: null;
-}
-
 // --- Flaggen-SVGs ---
 function flagDE(int $size = 20): string {
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 5 3" width="'.$size.'" height="'.round($size*0.6).'" style="border-radius:3px;vertical-align:middle;display:inline-block"><rect width="5" height="1" fill="#000"/><rect y="1" width="5" height="1" fill="#D00"/><rect y="2" width="5" height="1" fill="#FFCE00"/></svg>';
@@ -548,7 +433,7 @@ function flagUS(int $size = 20): string {
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 30" width="'.$size.'" height="'.round($size*0.6).'" style="border-radius:3px;vertical-align:middle;display:inline-block"><rect width="50" height="30" fill="#B22234"/><g fill="#fff"><rect y="2.31" width="50" height="2.31"/><rect y="6.92" width="50" height="2.31"/><rect y="11.54" width="50" height="2.31"/><rect y="16.15" width="50" height="2.31"/><rect y="20.77" width="50" height="2.31"/><rect y="25.38" width="50" height="2.31"/></g><rect width="20" height="16.15" fill="#3C3B6E"/><g fill="#fff" font-size="2" font-family="serif"><text x="2" y="3.5">&#9733;</text><text x="6" y="3.5">&#9733;</text><text x="10" y="3.5">&#9733;</text><text x="14" y="3.5">&#9733;</text><text x="4" y="6.5">&#9733;</text><text x="8" y="6.5">&#9733;</text><text x="12" y="6.5">&#9733;</text><text x="2" y="9.5">&#9733;</text><text x="6" y="9.5">&#9733;</text><text x="10" y="9.5">&#9733;</text><text x="14" y="9.5">&#9733;</text><text x="4" y="12.5">&#9733;</text><text x="8" y="12.5">&#9733;</text><text x="12" y="12.5">&#9733;</text><text x="2" y="15.5">&#9733;</text><text x="6" y="15.5">&#9733;</text><text x="10" y="15.5">&#9733;</text><text x="14" y="15.5">&#9733;</text></g></svg>';
 }
 
-// --- SMTP-Mail senden ---
+// --- SMTP-Mail senden / Send SMTP mail ---
 function dashboardSendMail(string $to, string $subject, string $bodyHtml): bool {
     $cfg = dashConfig();
     $host = $cfg['smtp_host'] ?? '';
@@ -575,7 +460,7 @@ function dashboardSendMail(string $to, string $subject, string $bodyHtml): bool 
         fwrite($fp, $cmd . "\r\n");
         return $getResp();
     };
-    $getResp(); // server greeting
+    $getResp();
     $send('EHLO ' . (gethostname() ?: 'localhost'));
     if ($encryption === 'tls') {
         $send('STARTTLS');
@@ -610,20 +495,12 @@ function dashboardSendMail(string $to, string $subject, string $bodyHtml): bool 
     return str_starts_with(trim($resp), '250');
 }
 
-// --- Setup (POST) — Ersteinrichtung Admin-Benutzer ---
+// --- Setup (POST) — Ersteinrichtung Admin-Passwort ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['setup_password'], $_POST['setup_confirm'])) {
     $pw  = $_POST['setup_password'];
     $pw2 = $_POST['setup_confirm'];
-    $adminUsername = trim($_POST['setup_username'] ?? '') ?: 'admin';
-    $adminEmail = trim($_POST['setup_email'] ?? '');
     $setupInputData = [
-        'username' => $adminUsername,
-        'email'    => $adminEmail,
         'scan_dir' => $_POST['setup_scan_dir'] ?? '',
-        'db_host'  => $dockerMode ? (getenv('WEBDASH_DB_HOST') ?: '') : trim($_POST['setup_db_host'] ?? ''),
-        'db_name'  => $dockerMode ? (getenv('WEBDASH_DB_NAME') ?: '') : trim($_POST['setup_db_name'] ?? ''),
-        'db_user'  => $dockerMode ? (getenv('WEBDASH_DB_USER') ?: '') : trim($_POST['setup_db_user'] ?? ''),
-        'db_pass'  => $dockerMode ? (getenv('WEBDASH_DB_PASS') !== false ? getenv('WEBDASH_DB_PASS') : '') : ($_POST['setup_db_pass'] ?? ''),
     ];
     if (strlen($pw) < 4) {
         $_SESSION['dashboard_setup_error'] = $t['pw_short'];
@@ -640,46 +517,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['setup_password'], $_P
             $dir = rtrim(trim($_POST['setup_scan_dir']), '/\\');
             if ($dir && is_dir($dir)) $cfg['scan_dir'] = $dir;
         }
-        // DB-Config aus Setup speichern (falls angegeben) — prüfen/erstellen
-        // Im Docker-Modus: DB-Config aus Env-Vars übernehmen
-        if ($dockerMode) {
-            $dbName = getenv('WEBDASH_DB_NAME') ?: '';
-            $dbHost = getenv('WEBDASH_DB_HOST') ?: 'localhost';
-            $dbUser = getenv('WEBDASH_DB_USER') ?: 'root';
-            $dbPass = getenv('WEBDASH_DB_PASS') !== false ? getenv('WEBDASH_DB_PASS') : '';
-        } else {
-            $dbName = trim($_POST['setup_db_name'] ?? '');
-            $dbHost = trim($_POST['setup_db_host'] ?? '') ?: 'localhost';
-            $dbUser = trim($_POST['setup_db_user'] ?? '') ?: 'root';
-            $dbPass = $_POST['setup_db_pass'] ?? '';
-        }
-        if ($dbName) {
-            $dbResult = testOrCreateDB($dbHost, $dbName, $dbUser, $dbPass);
-            if ($dbResult['ok']) {
-                $cfg['db_host'] = $dbHost;
-                $cfg['db_name'] = $dbName;
-                $cfg['db_user'] = $dbUser;
-                $cfg['db_pass'] = $dbPass;
-                // Admin-User in DB anlegen → lokales Passwort entfernen
-                $pdo = $dbResult['pdo'];
-                $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-                $stmt->execute([$adminUsername]);
-                if (!$stmt->fetch()) {
-                    $ins = $pdo->prepare('INSERT INTO users (username, password, name, email, role) VALUES (?, ?, ?, ?, ?)');
-                    $ins->execute([$adminUsername, $pwHash, ucfirst($adminUsername), $adminEmail ?: null, 'admin']);
-                }
-                unset($cfg['admin_pass']);
-            } else {
-                $_SESSION['dashboard_setup_error'] = $t['db_test_fail'] . ': ' . $dbResult['error'];
-                $_SESSION['dashboard_setup_input'] = $setupInputData;
-                $cfg['admin_pass'] = $cfg['admin_pass'] ?? $pwHash;
-                saveDashConfig($cfg);
-                header('Location: /');
-                exit;
-            }
-        }
         saveDashConfig($cfg);
-        $_SESSION['dashboard_user'] = ['id'=>0,'username'=>$adminUsername,'name'=>ucfirst($adminUsername),'role'=>'admin'];
+        $_SESSION['dashboard_user'] = ['id'=>0,'username'=>'admin','name'=>'Admin','role'=>'admin'];
     }
     header('Location: /');
     exit;
@@ -690,28 +529,21 @@ $loginError = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['password'])) {
     $authenticated = false;
 
-    // 1. Lokales Admin-Passwort (config.json)
+    // Lokales Admin-Passwort (config.json)
     $cfg = dashConfig();
     if (!empty($cfg['admin_pass']) && password_verify($_POST['password'], $cfg['admin_pass'])) {
         $_SESSION['dashboard_user'] = ['id'=>0,'username'=>'admin','name'=>'Admin','role'=>'admin'];
         $authenticated = true;
     }
 
-    // 2. Datenbank-Login
+    // Pr&uuml;fe Benutzer-Liste / Check users list
     if (!$authenticated) {
-        $db = getDashboardDB();
-        if ($db) {
-            $stmt = $db->prepare('SELECT id, username, name, password, role FROM users WHERE username = ? AND role = ? LIMIT 1');
-            $stmt->execute([trim($_POST['username']), 'admin']);
-            $user = $stmt->fetch();
-            if ($user && password_verify($_POST['password'], $user['password'])) {
-                $_SESSION['dashboard_user'] = [
-                    'id'       => $user['id'],
-                    'username' => $user['username'],
-                    'name'     => $user['name'],
-                    'role'     => $user['role'],
-                ];
+        $users = $cfg['users'] ?? [];
+        foreach ($users as $u) {
+            if ($u['username'] === $_POST['username'] && password_verify($_POST['password'], $u['password'])) {
+                $_SESSION['dashboard_user'] = ['id'=>0,'username'=>$u['username'],'name'=>$u['name'] ?? $u['username'],'role'=>'admin'];
                 $authenticated = true;
+                break;
             }
         }
     }
@@ -727,15 +559,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['dashboard_user'])) {
     $allowed = ['image/png'=>'png','image/jpeg'=>'jpg','image/svg+xml'=>'svg','image/webp'=>'webp','image/gif'=>'gif'];
     $uploaded = false;
-    foreach (['logo_dark' => DASH_LOGO_DARK, 'logo_light' => DASH_LOGO_LIGHT] as $field => $basePath) {
+    foreach (['logo_dark' => DASH_LOGO_DARK, 'logo_light' => DASH_LOGO_LIGHT, 'bg_image' => DASH_BG_IMAGE] as $field => $basePath) {
         if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
             $file = $_FILES[$field];
-            if (isset($allowed[$file['type']]) && $file['size'] <= 2 * 1024 * 1024) {
+            $maxSize = $field === 'bg_image' ? 5 * 1024 * 1024 : 2 * 1024 * 1024;
+            if (isset($allowed[$file['type']]) && $file['size'] <= $maxSize) {
                 $ext = $allowed[$file['type']];
                 foreach (glob($basePath . '.*') as $old) @unlink($old);
                 move_uploaded_file($file['tmp_name'], $basePath . '.' . $ext);
                 $cfg = dashConfig();
                 $cfg["{$field}_ext"] = $ext;
+                if ($field === 'bg_image') $cfg['bg_mode'] = 'custom';
                 saveDashConfig($cfg);
                 $uploaded = true;
             }
@@ -744,50 +578,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['dashboard_user'])
     if ($uploaded) { header('Location: /'); exit; }
 }
 
-// --- DB-Konfiguration speichern ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cfg_db_host']) && !empty($_SESSION['dashboard_user'])) {
-    $dbHost = trim($_POST['cfg_db_host']) ?: 'localhost';
-    $dbName = trim($_POST['cfg_db_name'] ?? '');
-    $dbUser = trim($_POST['cfg_db_user'] ?? '');
-    $dbPass = $_POST['cfg_db_pass'] ?? '';
-    if ($dbName) {
-        $dbResult = testOrCreateDB($dbHost, $dbName, $dbUser ?: 'root', $dbPass);
-        if ($dbResult['ok']) {
-            $cfg = dashConfig();
-            $cfg['db_host'] = $dbHost;
-            $cfg['db_name'] = $dbName;
-            $cfg['db_user'] = $dbUser;
-            $cfg['db_pass'] = $dbPass;
-            // Admin-User in DB anlegen → lokales Passwort entfernen
-            if (!empty($cfg['admin_pass'])) {
-                $pdo = $dbResult['pdo'];
-                $adminName = $_SESSION['dashboard_user']['username'] ?? 'admin';
-                $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-                $stmt->execute([$adminName]);
-                if (!$stmt->fetch()) {
-                    $ins = $pdo->prepare('INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)');
-                    $ins->execute([$adminName, $cfg['admin_pass'], ucfirst($adminName), 'admin']);
-                }
-                unset($cfg['admin_pass']);
-            }
+
+
+// --- Admin-Profil ändern / Change admin profile ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_admin_profile']) && !empty($_SESSION['dashboard_user'])) {
+    $cfg = dashConfig();
+    $cfg['admin_email'] = trim($_POST['admin_email'] ?? '');
+    $pw  = $_POST['new_admin_pw'] ?? '';
+    $pw2 = $_POST['confirm_admin_pw'] ?? '';
+    if ($pw !== '' || $pw2 !== '') {
+        if (strlen($pw) < 4) {
+            $_SESSION['dashboard_pw_msg'] = ['fail', $t['pw_short']];
             saveDashConfig($cfg);
-            $_SESSION['dashboard_db_msg'] = ['ok', $t['db_test_ok']];
-        } else {
-            $_SESSION['dashboard_db_msg'] = ['fail', $t['db_test_fail'] . ': ' . $dbResult['error']];
-            $_SESSION['dashboard_db_input'] = compact('dbHost', 'dbName', 'dbUser', 'dbPass');
+            header('Location: /');
+            exit;
+        } elseif ($pw !== $pw2) {
+            $_SESSION['dashboard_pw_msg'] = ['fail', $t['pw_mismatch']];
+            saveDashConfig($cfg);
+            header('Location: /');
+            exit;
         }
-    } else {
-        // DB entfernen
-        $cfg = dashConfig();
-        unset($cfg['db_host'], $cfg['db_name'], $cfg['db_user'], $cfg['db_pass']);
-        saveDashConfig($cfg);
-        $_SESSION['dashboard_db_msg'] = ['ok', $t['db_save']];
+        $cfg['admin_pass'] = password_hash($pw, PASSWORD_DEFAULT);
     }
+    saveDashConfig($cfg);
+    $_SESSION['dashboard_pw_msg'] = ['ok', $lang === 'de' ? 'Gespeichert' : 'Saved'];
     header('Location: /');
     exit;
 }
 
-// --- SMTP-Konfiguration speichern ---
+// --- SMTP-Konfiguration speichern / Save SMTP config ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cfg_smtp_host']) && !empty($_SESSION['dashboard_user'])) {
     $cfg = dashConfig();
     $cfg['smtp_host']       = trim($_POST['cfg_smtp_host'] ?? '');
@@ -803,17 +622,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cfg_smtp_host']) && !
     exit;
 }
 
-// --- SMTP Test-E-Mail senden ---
+// --- SMTP Test-E-Mail senden / Send SMTP test email ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['smtp_test_send']) && !empty($_SESSION['dashboard_user'])) {
-    $db = getDashboardDB();
-    $testTo = '';
-    if ($db && !empty($_SESSION['dashboard_user']['id'])) {
-        $stmt = $db->prepare('SELECT email FROM users WHERE id = ? LIMIT 1');
-        $stmt->execute([$_SESSION['dashboard_user']['id']]);
-        $row = $stmt->fetch();
-        if ($row) $testTo = $row['email'] ?? '';
-    }
-    if (!$testTo) $testTo = dashConfig()['smtp_from'] ?? dashConfig()['smtp_user'] ?? '';
+    $testTo = dashConfig()['smtp_from'] ?? dashConfig()['smtp_user'] ?? '';
     if ($testTo) {
         $hostname = gethostname() ?: 'webdash';
         $ok = dashboardSendMail($testTo, 'webdash Test-Mail', '<h2>webdash</h2><p>Dies ist eine Test-E-Mail von <b>' . htmlspecialchars($hostname) . '</b>.</p><p>This is a test email from <b>' . htmlspecialchars($hostname) . '</b>.</p>');
@@ -825,125 +636,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['smtp_test_send']) && 
     exit;
 }
 
-// --- Admin-Passwort ändern ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['new_admin_pw'], $_POST['confirm_admin_pw']) && !empty($_SESSION['dashboard_user'])) {
-    $pw  = $_POST['new_admin_pw'];
-    $pw2 = $_POST['confirm_admin_pw'];
-    if (strlen($pw) < 4) {
-        $_SESSION['dashboard_pw_msg'] = ['fail', $t['pw_short']];
-    } elseif ($pw !== $pw2) {
-        $_SESSION['dashboard_pw_msg'] = ['fail', $t['pw_mismatch']];
-    } else {
-        $pwHash = password_hash($pw, PASSWORD_DEFAULT);
-        $cfg = dashConfig();
-        // DB-User aktualisieren falls vorhanden
-        $db = getDashboardDB();
-        if ($db) {
-            $adminName = $_SESSION['dashboard_user']['username'] ?? 'admin';
-            $stmt = $db->prepare('UPDATE users SET password = ? WHERE username = ? AND role = ?');
-            $stmt->execute([$pwHash, $adminName, 'admin']);
-        } else {
-            $cfg['admin_pass'] = $pwHash;
-        }
-        saveDashConfig($cfg);
-        $_SESSION['dashboard_pw_msg'] = ['ok', $lang === 'de' ? 'Passwort erfolgreich ge&auml;ndert' : 'Password changed successfully'];
-    }
-    header('Location: /');
-    exit;
-}
-
-// --- Eigenen User in DB synchronisieren ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sync_self_pw']) && !empty($_SESSION['dashboard_user'])) {
-    $db = getDashboardDB();
-    $syncPw = $_POST['sync_self_pw'];
-    $syncUser = $_SESSION['dashboard_user']['username'] ?? 'admin';
-    $syncName = $_SESSION['dashboard_user']['name'] ?? ucfirst($syncUser);
-    if ($db && strlen($syncPw) >= 4) {
-        $stmt = $db->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-        $stmt->execute([$syncUser]);
-        if (!$stmt->fetch()) {
-            $syncEmail = trim($_POST['sync_self_email'] ?? '');
-            $ins = $db->prepare('INSERT INTO users (username, password, name, email, role) VALUES (?, ?, ?, ?, ?)');
-            $ins->execute([$syncUser, password_hash($syncPw, PASSWORD_DEFAULT), $syncName, $syncEmail ?: null, 'admin']);
-            // Session mit DB-ID aktualisieren
-            $stmt2 = $db->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-            $stmt2->execute([$syncUser]);
-            $newUser = $stmt2->fetch();
-            if ($newUser) $_SESSION['dashboard_user']['id'] = $newUser['id'];
-            // Lokales Passwort entfernen falls vorhanden
-            $cfg = dashConfig();
-            if (isset($cfg['admin_pass'])) { unset($cfg['admin_pass']); saveDashConfig($cfg); }
-            $_SESSION['dashboard_user_msg'] = ['ok', $lang === 'de' ? 'Dein Account wurde in der Datenbank angelegt' : 'Your account has been created in the database'];
-        } else {
-            $_SESSION['dashboard_user_msg'] = ['ok', $lang === 'de' ? 'User existiert bereits in der DB' : 'User already exists in DB'];
-        }
-    } else {
+// --- Benutzer anlegen / Add user ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user_username'], $_POST['add_user_password']) && !empty($_SESSION['dashboard_user'])) {
+    $cfg = dashConfig();
+    $users = $cfg['users'] ?? [];
+    $uUser = trim($_POST['add_user_username']);
+    $uName = trim($_POST['add_user_name'] ?? '') ?: $uUser;
+    $uEmail = trim($_POST['add_user_email'] ?? '');
+    $uPass = $_POST['add_user_password'];
+    $exists = false;
+    foreach ($users as $u) { if ($u['username'] === $uUser) { $exists = true; break; } }
+    if ($exists) {
+        $_SESSION['dashboard_user_msg'] = ['fail', $t['users_exists']];
+    } elseif (strlen($uPass) < 4) {
         $_SESSION['dashboard_user_msg'] = ['fail', $t['pw_short']];
+    } else {
+        $users[] = ['username' => $uUser, 'password' => password_hash($uPass, PASSWORD_DEFAULT), 'name' => $uName, 'email' => $uEmail];
+        $cfg['users'] = $users;
+        saveDashConfig($cfg);
+        $_SESSION['dashboard_user_msg'] = ['ok', $t['users_added']];
     }
     header('Location: /');
     exit;
 }
 
-// --- Admin anlegen ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user_name']) && !empty($_SESSION['dashboard_user'])) {
-    $db = getDashboardDB();
-    if ($db) {
-        $uName = trim($_POST['add_user_name']);
-        $uUser = trim($_POST['add_user_username'] ?? '') ?: $uName;
-        $uPass = $_POST['add_user_password'] ?? '';
-        if ($uUser && strlen($uPass) >= 4) {
-            $stmt = $db->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-            $stmt->execute([$uUser]);
-            if ($stmt->fetch()) {
-                $_SESSION['dashboard_user_msg'] = ['fail', $t['users_exists']];
-            } else {
-                $uEmail = trim($_POST['add_user_email'] ?? '');
-                $ins = $db->prepare('INSERT INTO users (username, password, name, email, role) VALUES (?, ?, ?, ?, ?)');
-                $ins->execute([$uUser, password_hash($uPass, PASSWORD_DEFAULT), $uName, $uEmail ?: null, 'admin']);
-                $_SESSION['dashboard_user_msg'] = ['ok', $t['users_added']];
-            }
-        } else {
-            $_SESSION['dashboard_user_msg'] = ['fail', $t['pw_short']];
-        }
-    }
-    header('Location: /');
-    exit;
-}
-
-// --- Benutzer bearbeiten ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user_id']) && !empty($_SESSION['dashboard_user'])) {
-    $db = getDashboardDB();
-    if ($db) {
-        $uid    = (int) $_POST['edit_user_id'];
+// --- Benutzer bearbeiten / Edit user ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user_idx']) && !empty($_SESSION['dashboard_user'])) {
+    $cfg = dashConfig();
+    $users = $cfg['users'] ?? [];
+    $idx = (int)$_POST['edit_user_idx'];
+    if (isset($users[$idx])) {
         $uName  = trim($_POST['edit_user_name'] ?? '');
         $uEmail = trim($_POST['edit_user_email'] ?? '');
         $uPass  = $_POST['edit_user_password'] ?? '';
-        if ($uName) {
-            $db->prepare('UPDATE users SET name = ? WHERE id = ?')->execute([$uName, $uid]);
-        }
-        $db->prepare('UPDATE users SET email = ? WHERE id = ?')->execute([$uEmail ?: null, $uid]);
-        if (strlen($uPass) >= 4) {
-            $db->prepare('UPDATE users SET password = ? WHERE id = ?')->execute([password_hash($uPass, PASSWORD_DEFAULT), $uid]);
-        }
-        $_SESSION['dashboard_user_msg'] = ['ok', $lang === 'de' ? 'Benutzer aktualisiert' : 'User updated'];
+        if ($uName) $users[$idx]['name'] = $uName;
+        $users[$idx]['email'] = $uEmail;
+        if (strlen($uPass) >= 4) $users[$idx]['password'] = password_hash($uPass, PASSWORD_DEFAULT);
+        $cfg['users'] = $users;
+        saveDashConfig($cfg);
+        $_SESSION['dashboard_user_msg'] = ['ok', $t['users_save']];
     }
     header('Location: /');
     exit;
 }
 
-// --- Benutzer löschen ---
+// --- Benutzer loeschen / Delete user ---
 if (isset($_GET['delete_user']) && !empty($_SESSION['dashboard_user'])) {
-    $db = getDashboardDB();
-    if ($db) {
-        $uid = (int) $_GET['delete_user'];
-        $currentUser = $_SESSION['dashboard_user']['username'] ?? '';
-        $stmt = $db->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
-        $stmt->execute([$uid]);
-        $target = $stmt->fetch();
-        if ($target && $target['username'] !== $currentUser) {
-            $db->prepare('DELETE FROM users WHERE id = ?')->execute([$uid]);
-            $_SESSION['dashboard_user_msg'] = ['ok', $t['users_deleted']];
-        }
+    $cfg = dashConfig();
+    $users = $cfg['users'] ?? [];
+    $idx = (int)$_GET['delete_user'];
+    if (isset($users[$idx])) {
+        array_splice($users, $idx, 1);
+        $cfg['users'] = $users;
+        saveDashConfig($cfg);
     }
     header('Location: /');
     exit;
@@ -974,6 +719,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_include_dirs']) 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_google_search']) && !empty($_SESSION['dashboard_user'])) {
     $cfg = dashConfig();
     $cfg['google_search'] = !empty($_POST['google_search_enabled']);
+    saveDashConfig($cfg);
+    header('Location: /');
+    exit;
+}
+
+// --- Hintergrund-Modus umschalten / Toggle background mode ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_bg_mode']) && !empty($_SESSION['dashboard_user'])) {
+    $cfg = dashConfig();
+    $mode = $_POST['bg_mode'] ?? '';
+    $cfg['bg_mode'] = in_array($mode, ['preset', 'custom', ''], true) ? $mode : '';
+    saveDashConfig($cfg);
+    header('Location: /');
+    exit;
+}
+
+// --- Hintergrundbild-Effekte speichern / Save background image effects ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_bg_effects']) && !empty($_SESSION['dashboard_user'])) {
+    $cfg = dashConfig();
+    $cfg['bg_blur'] = max(0, min(100, (int)($_POST['bg_blur'] ?? 10)));
+    $cfg['bg_brightness'] = max(0, min(100, (int)($_POST['bg_brightness'] ?? 55)));
+    saveDashConfig($cfg);
+    header('Location: /');
+    exit;
+}
+
+// --- Dashboard-Sektionen ein-/ausschalten / Toggle dashboard sections ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_dashboard_sections']) && !empty($_SESSION['dashboard_user'])) {
+    $cfg = dashConfig();
+    $cfg['show_stats'] = !empty($_POST['show_stats']);
+    $cfg['show_resources'] = !empty($_POST['show_resources']);
+    $cfg['show_services'] = !empty($_POST['show_services']);
     saveDashConfig($cfg);
     header('Location: /');
     exit;
@@ -1097,12 +873,20 @@ if (isset($_GET['remove_project_logo']) && !empty($_SESSION['dashboard_user'])) 
 // --- Logo entfernen ---
 if (isset($_GET['remove_logo']) && !empty($_SESSION['dashboard_user'])) {
     $variant = $_GET['remove_logo'];
-    if (in_array($variant, ['dark', 'light'], true)) {
-        $base = $variant === 'light' ? DASH_LOGO_LIGHT : DASH_LOGO_DARK;
-        foreach (glob($base . '.*') as $old) @unlink($old);
-        $cfg = dashConfig();
-        unset($cfg["logo_{$variant}_ext"]);
-        saveDashConfig($cfg);
+    if (in_array($variant, ['dark', 'light', 'bg_image'], true)) {
+        if ($variant === 'bg_image') {
+            $base = DASH_BG_IMAGE;
+            foreach (glob($base . '.*') as $old) @unlink($old);
+            $cfg = dashConfig();
+            unset($cfg['bg_image_ext'], $cfg['bg_blur'], $cfg['bg_brightness'], $cfg['bg_overlay']);
+            saveDashConfig($cfg);
+        } else {
+            $base = $variant === 'light' ? DASH_LOGO_LIGHT : DASH_LOGO_DARK;
+            foreach (glob($base . '.*') as $old) @unlink($old);
+            $cfg = dashConfig();
+            unset($cfg["logo_{$variant}_ext"]);
+            saveDashConfig($cfg);
+        }
     }
     header('Location: /');
     exit;
@@ -1119,63 +903,26 @@ $isAdmin    = !empty($_SESSION['dashboard_user']);
 $adminUser  = $_SESSION['dashboard_user'] ?? null;
 $loginError = $_SESSION['dashboard_login_error'] ?? '';
 unset($_SESSION['dashboard_login_error']);
-$resetSuccess = !empty($_SESSION['dashboard_reset_success']);
-unset($_SESSION['dashboard_reset_success']);
 $setupError = $_SESSION['dashboard_setup_error'] ?? '';
 unset($_SESSION['dashboard_setup_error']);
 $setupInput = $_SESSION['dashboard_setup_input'] ?? null;
 unset($_SESSION['dashboard_setup_input']);
 
-// --- Auto-Setup im Docker-Modus: Admin-User aus Env-Vars anlegen ---
-$_dashCfgCheck = dashConfig();
+// --- Auto-Setup im Docker-Modus: Admin-Passwort aus Env-Vars anlegen ---
 if ($dockerMode) {
-    $envAdminUser = getenv('WEBDASH_ADMIN_USER') ?: '';
     $envAdminPass = getenv('WEBDASH_ADMIN_PASS') ?: '';
-    $envAdminEmail = getenv('WEBDASH_ADMIN_EMAIL') ?: '';
-    if ($envAdminUser && $envAdminPass) {
+    if ($envAdminPass) {
         $cfg = dashConfig();
-        $adminExists = !empty($cfg['admin_pass']);
-        // DB aus Env-Vars konfigurieren/verbinden
-        $dbName = getenv('WEBDASH_DB_NAME') ?: '';
-        if ($dbName) {
-            $dbHost = getenv('WEBDASH_DB_HOST') ?: 'localhost';
-            $dbUser = getenv('WEBDASH_DB_USER') ?: 'root';
-            $dbPass = getenv('WEBDASH_DB_PASS') !== false ? getenv('WEBDASH_DB_PASS') : '';
-            // DB-Config in config.json speichern (damit getDashboardDB() funktioniert)
-            if (empty($cfg['db_name'])) {
-                $cfg['db_host'] = $dbHost;
-                $cfg['db_name'] = $dbName;
-                $cfg['db_user'] = $dbUser;
-                $cfg['db_pass'] = $dbPass;
-                saveDashConfig($cfg);
-            }
-            $dbResult = testOrCreateDB($dbHost, $dbName, $dbUser, $dbPass);
-            if ($dbResult['ok']) {
-                $pdo = $dbResult['pdo'];
-                $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-                $stmt->execute([$envAdminUser]);
-                if ($stmt->fetch()) {
-                    $adminExists = true;
-                } else {
-                    // Admin in DB anlegen
-                    $pwHash = password_hash($envAdminPass, PASSWORD_DEFAULT);
-                    $ins = $pdo->prepare('INSERT INTO users (username, password, name, email, role) VALUES (?, ?, ?, ?, ?)');
-                    $ins->execute([$envAdminUser, $pwHash, ucfirst($envAdminUser), $envAdminEmail ?: null, 'admin']);
-                    $adminExists = true;
-                }
-            }
-        } elseif (!$adminExists) {
-            // Keine DB → lokales Passwort
+        if (empty($cfg['admin_pass'])) {
             $cfg['admin_pass'] = password_hash($envAdminPass, PASSWORD_DEFAULT);
             saveDashConfig($cfg);
-            $adminExists = true;
         }
-        $_dashCfgCheck = dashConfig();
     }
 }
 
-// --- Setup-Modus: kein Admin-Passwort und keine DB → Ersteinrichtung ---
-$needsSetup = empty($_dashCfgCheck['admin_pass']) && !getDashboardDB() && !$isAdmin;
+// --- Setup-Modus: kein Admin-Passwort → Ersteinrichtung ---
+$_dashCfgCheck = dashConfig();
+$needsSetup = empty($_dashCfgCheck['admin_pass']) && !$isAdmin;
 
 // --- System-Stats API (AJAX, nur Admin) ---
 if (isset($_GET['action']) && $_GET['action'] === 'system_stats' && $isAdmin) {
@@ -1300,66 +1047,99 @@ if (isset($_GET['action']) && $isAdmin && in_array($_GET['action'], ['check_upda
     }
 }
 
-// --- Passwort vergessen (POST: Token generieren + Mail senden) ---
+
+// --- Passwort vergessen / Forgot password (POST: Token generieren + Mail senden) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['forgot_identifier'])) {
-    $identifier = trim($_POST['forgot_identifier']);
-    $db = getDashboardDB();
-    if ($db && $identifier) {
-        $stmt = $db->prepare('SELECT id, email FROM users WHERE (username = ? OR email = ?) AND role = ? AND email IS NOT NULL AND email != \'\' LIMIT 1');
-        $stmt->execute([$identifier, $identifier, 'admin']);
-        $user = $stmt->fetch();
-        if ($user && $user['email']) {
-            // Alte Tokens des Users löschen
-            $db->prepare('DELETE FROM password_resets WHERE user_id = ?')->execute([$user['id']]);
-            // Neuen Token erstellen
-            $token = bin2hex(random_bytes(32));
-            $expires = date('Y-m-d H:i:s', time() + 3600);
-            $db->prepare('INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)')->execute([$user['id'], $token, $expires]);
-            // Reset-Link erstellen
-            // Reverse Proxy: X-Forwarded-Proto prüfen / check X-Forwarded-Proto for reverse proxy
-            $proto = (
-                (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
-            ) ? 'https' : 'http';
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            $resetUrl = $proto . '://' . $host . '/?action=reset_password&token=' . $token;
-            $bodyHtml = '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">'
-                . '<h2 style="color:#00d4cc">webdash</h2>'
-                . '<p>' . ($lang === 'de' ? 'Du hast eine Passwort-Zurücksetzung angefordert.' : 'You requested a password reset.') . '</p>'
-                . '<p><a href="' . htmlspecialchars($resetUrl) . '" style="display:inline-block;padding:12px 24px;background:#00d4cc;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">'
-                . ($lang === 'de' ? 'Passwort zurücksetzen' : 'Reset password') . '</a></p>'
-                . '<p style="font-size:13px;color:#888">' . ($lang === 'de' ? 'Dieser Link ist 1 Stunde gültig.' : 'This link is valid for 1 hour.') . '</p>'
-                . '</div>';
-            dashboardSendMail($user['email'], 'webdash — ' . strip_tags($t['reset_pw']), $bodyHtml);
+    $email = trim($_POST['forgot_identifier']);
+    $cfg = dashConfig();
+    $users = $cfg['users'] ?? [];
+    $foundEmail = '';
+    // Admin-E-Mail prüfen / Check admin email
+    $adminEmail = $cfg['admin_email'] ?? '';
+    if ($adminEmail && strtolower($adminEmail) === strtolower($email)) {
+        $foundEmail = $adminEmail;
+    }
+    // Suche in Benutzer-Liste / Search user list
+    if (!$foundEmail) {
+        foreach ($users as $u) {
+            if (!empty($u['email']) && strtolower($u['email']) === strtolower($email)) {
+                $foundEmail = $u['email'];
+                break;
+            }
         }
+    }
+    if ($foundEmail) {
+        $token = bin2hex(random_bytes(32));
+        $expires = time() + 3600;
+        $tokens = $cfg['reset_tokens'] ?? [];
+        // Alte Tokens fuer diese E-Mail loeschen / Remove old tokens for this email
+        $tokens = array_values(array_filter($tokens, fn($rt) => strtolower($rt['email'] ?? '') !== strtolower($foundEmail)));
+        $tokens[] = ['email' => $foundEmail, 'token' => $token, 'expires' => $expires];
+        $cfg['reset_tokens'] = $tokens;
+        saveDashConfig($cfg);
+        // Reset-Link / Reset link
+        $proto = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')) ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $resetUrl = $proto . '://' . $host . '/?action=reset_password&token=' . $token;
+        $bodyHtml = '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">'
+            . '<h2 style="color:#00d4cc">webdash</h2>'
+            . '<p>' . ($lang === 'de' ? 'Du hast eine Passwort-Zurücksetzung angefordert.' : 'You requested a password reset.') . '</p>'
+            . '<p><a href="' . htmlspecialchars($resetUrl) . '" style="display:inline-block;padding:12px 24px;background:#00d4cc;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">'
+            . ($lang === 'de' ? 'Passwort zurücksetzen' : 'Reset password') . '</a></p>'
+            . '<p style="font-size:13px;color:#888">' . ($lang === 'de' ? 'Dieser Link ist 1 Stunde gültig.' : 'This link is valid for 1 hour.') . '</p>'
+            . '</div>';
+        dashboardSendMail($foundEmail, 'webdash — ' . strip_tags($t['reset_pw']), $bodyHtml);
     }
     $_SESSION['dashboard_forgot_sent'] = true;
     header('Location: /?action=forgot_password');
     exit;
 }
 
-// --- Passwort zurücksetzen (POST: Neues Passwort speichern) ---
+// --- Passwort zuruecksetzen / Reset password (POST: Neues Passwort speichern) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_token'], $_POST['reset_password'], $_POST['reset_confirm'])) {
     $token = $_POST['reset_token'];
     $pw    = $_POST['reset_password'];
     $pw2   = $_POST['reset_confirm'];
-    $db = getDashboardDB();
+    $cfg = dashConfig();
+    $tokens = $cfg['reset_tokens'] ?? [];
     $error = '';
-    if (!$db) {
-        $error = $t['reset_pw_expired'];
-    } elseif (strlen($pw) < 4) {
+    if (strlen($pw) < 4) {
         $error = $t['pw_short'];
     } elseif ($pw !== $pw2) {
         $error = $t['pw_mismatch'];
     } else {
-        $stmt = $db->prepare('SELECT pr.id, pr.user_id FROM password_resets pr WHERE pr.token = ? AND pr.expires_at > NOW() LIMIT 1');
-        $stmt->execute([$token]);
-        $reset = $stmt->fetch();
-        if (!$reset) {
+        $found = null;
+        $foundIdx = null;
+        foreach ($tokens as $i => $rt) {
+            if ($rt['token'] === $token && ($rt['expires'] ?? 0) > time()) {
+                $found = $rt;
+                $foundIdx = $i;
+                break;
+            }
+        }
+        if (!$found) {
             $error = $t['reset_pw_expired'];
         } else {
-            $db->prepare('UPDATE users SET password = ? WHERE id = ?')->execute([password_hash($pw, PASSWORD_DEFAULT), $reset['user_id']]);
-            $db->prepare('DELETE FROM password_resets WHERE user_id = ?')->execute([$reset['user_id']]);
+            // Admin-Passwort oder User-Passwort aktualisieren / Update admin or user password
+            $pwHash = password_hash($pw, PASSWORD_DEFAULT);
+            $adminEmail = $cfg['admin_email'] ?? '';
+            if ($adminEmail && strtolower($adminEmail) === strtolower($found['email'])) {
+                $cfg['admin_pass'] = $pwHash;
+            }
+            $users = $cfg['users'] ?? [];
+            foreach ($users as &$u) {
+                if (!empty($u['email']) && strtolower($u['email']) === strtolower($found['email'])) {
+                    $u['password'] = $pwHash;
+                }
+            }
+            unset($u);
+            $cfg['users'] = $users;
+            // Token entfernen / Remove token
+            array_splice($tokens, $foundIdx, 1);
+            // Abgelaufene Tokens aufraeumen / Clean expired tokens
+            $tokens = array_values(array_filter($tokens, fn($rt) => ($rt['expires'] ?? 0) > time()));
+            $cfg['reset_tokens'] = $tokens;
+            saveDashConfig($cfg);
             $_SESSION['dashboard_reset_success'] = true;
             header('Location: /');
             exit;
@@ -1370,7 +1150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_token'], $_POST
     exit;
 }
 
-// --- Passwort-vergessen-Seite rendern ---
+// --- Passwort-vergessen-Seite / Forgot password page ---
 if (isset($_GET['action']) && $_GET['action'] === 'forgot_password' && !$isAdmin) {
     $forgotSent = !empty($_SESSION['dashboard_forgot_sent']);
     unset($_SESSION['dashboard_forgot_sent']);
@@ -1416,7 +1196,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <p style="font-size:.82rem;color:var(--text-muted);text-align:center;margin-bottom:1.25rem"><?= $t['forgot_pw_desc'] ?></p>
     <form method="POST" action="/?action=forgot_password">
       <div class="field">
-        <input type="text" name="forgot_identifier" required placeholder="<?= $t['username'] ?> / <?= $t['email'] ?>" autofocus>
+        <input type="email" name="forgot_identifier" required placeholder="<?= $t['email'] ?>" autofocus>
       </div>
       <button type="submit" class="btn"><?= $t['reset_pw'] ?></button>
     </form>
@@ -1427,17 +1207,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 </html>
 <?php exit; }
 
-// --- Passwort-Reset-Seite rendern ---
+// --- Passwort-Reset-Seite / Password reset page ---
 if (isset($_GET['action']) && $_GET['action'] === 'reset_password' && isset($_GET['token']) && !$isAdmin) {
     $token = $_GET['token'];
     $resetError = $_SESSION['dashboard_reset_error'] ?? '';
     unset($_SESSION['dashboard_reset_error']);
     $tokenValid = false;
-    $db = getDashboardDB();
-    if ($db) {
-        $stmt = $db->prepare('SELECT pr.id FROM password_resets pr WHERE pr.token = ? AND pr.expires_at > NOW() LIMIT 1');
-        $stmt->execute([$token]);
-        $tokenValid = (bool)$stmt->fetch();
+    $cfg = dashConfig();
+    $tokens = $cfg['reset_tokens'] ?? [];
+    foreach ($tokens as $rt) {
+        if ($rt['token'] === $token && ($rt['expires'] ?? 0) > time()) {
+            $tokenValid = true;
+            break;
+        }
     }
 ?>
 <!DOCTYPE html>
@@ -1504,11 +1286,19 @@ $hostname  = getenv('WEBDASH_HOSTNAME') ?: gethostname();
 $dashCfg   = dashConfig();
 $hasLogoDark  = !empty($dashCfg['logo_dark_ext']) && file_exists(DASH_LOGO_DARK . '.' . $dashCfg['logo_dark_ext']);
 $hasLogoLight = !empty($dashCfg['logo_light_ext']) && file_exists(DASH_LOGO_LIGHT . '.' . $dashCfg['logo_light_ext']);
+$hasBgImage   = !empty($dashCfg['bg_image_ext']) && file_exists(DASH_BG_IMAGE . '.' . $dashCfg['bg_image_ext']);
+$bgMode       = $dashCfg['bg_mode'] ?? ''; // 'preset' | 'custom' | ''
+$hasBgPreset  = $bgMode === 'preset';
+$hasBgCustom  = $bgMode === 'custom' && $hasBgImage;
+$hasBgAny     = $hasBgPreset || $hasBgCustom;
 $hasAnyLogo   = $hasLogoDark || $hasLogoLight;
 $hasAppLogoDark  = file_exists(DASH_APP_LOGO_DARK);
 $hasAppLogoLight = file_exists(DASH_APP_LOGO_LIGHT);
 $scanDir   = getenv('WEBDASH_SCAN_DIR') ?: ($dashCfg['scan_dir'] ?? dirname(__DIR__));
 $googleSearchEnabled = !empty($dashCfg['google_search']);
+$showStats     = $dashCfg['show_stats'] ?? true;
+$showResources = $dashCfg['show_resources'] ?? true;
+$showServices  = $dashCfg['show_services'] ?? true;
 
 // --- System-Infos ---
 $isWindows = PHP_OS_FAMILY === 'Windows';
@@ -1526,9 +1316,11 @@ if ($isWindows) {
 }
 if (!$needsSetup) extract(getSystemResources());
 
-// --- Erweiterte System-Infos nur für Admin ---
-if ($isAdmin && !$needsSetup) {
-    $serverIp      = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_ADDR'] ?? '—';
+// --- Erweiterte System-Infos (nur wenn Sektionen sichtbar) ---
+// --- Extended system info (only when sections visible) ---
+if ($isAdmin) $serverIp = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_ADDR'] ?? '—';
+
+if (($isAdmin || $showStats) && !$needsSetup) {
     $phpVersion    = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '.' . PHP_RELEASE_VERSION;
 
     // Apache-Version
@@ -1570,7 +1362,9 @@ if ($isAdmin && !$needsSetup) {
             ? str_replace(['up ','years','year','months','month','weeks','week','days','day','hours','hour','minutes','minute'],['','Jahre','Jahr','Monate','Monat','Wochen','Woche','Tage','Tag','Std','Std','Min','Min'], $uptimeRaw)
             : str_replace('up ', '', $uptimeRaw);
     }
+}
 
+if (($isAdmin || $showServices) && !$needsSetup) {
     // Services — Docker: Port-Check (kein systemctl), Bare-Metal: systemctl
     // Services — Docker: port check (no systemctl), bare-metal: systemctl
     $services = [];
@@ -1858,14 +1652,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   <?php if ($setupError): ?><div class="error-msg"><?= htmlspecialchars($setupError) ?></div><?php endif; ?>
   <form method="POST" action="/">
     <div class="field">
-      <label><?= $t['username'] ?></label>
-      <input type="text" name="setup_username" value="<?= htmlspecialchars($setupInput['username'] ?? 'admin') ?>" required autocomplete="username">
-    </div>
-    <div class="field">
-      <label><?= $t['email'] ?></label>
-      <input type="email" name="setup_email" value="<?= htmlspecialchars($setupInput['email'] ?? '') ?>" placeholder="admin@example.com" autocomplete="email">
-    </div>
-    <div class="field">
       <label><?= $t['new_password'] ?></label>
       <input type="password" name="setup_password" required minlength="4" autocomplete="new-password">
     </div>
@@ -1879,28 +1665,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <label><?= $t['scan_dir'] ?></label>
       <input type="text" name="setup_scan_dir" value="<?= htmlspecialchars($setupInput['scan_dir'] ?? getenv('WEBDASH_SCAN_DIR') ?: dirname(__DIR__)) ?>" placeholder="<?= htmlspecialchars(dirname(__DIR__)) ?>">
       <div class="field-hint"><?= $lang === 'de' ? 'Verzeichnis mit deinen Webanwendungen (DocumentRoot)' : 'Directory containing your web applications (DocumentRoot)' ?></div>
-    </div>
-    <div class="section-title"><?= $t['db_config'] ?></div>
-    <p style="font-size:.78rem;color:var(--text-dim);margin-bottom:.75rem"><?= $t['db_config_desc'] ?></p>
-    <div class="field">
-      <label><?= $t['db_host'] ?></label>
-      <input type="text" name="setup_db_host" value="<?= htmlspecialchars($setupInput['db_host'] ?? getenv('WEBDASH_DB_HOST') ?: '') ?>" placeholder="localhost">
-    </div>
-    <div class="field">
-      <label><?= $t['db_name'] ?></label>
-      <input type="text" name="setup_db_name" value="<?= htmlspecialchars($setupInput['db_name'] ?? getenv('WEBDASH_DB_NAME') ?: '') ?>" placeholder="">
-    </div>
-    <div class="field">
-      <label><?= $t['db_user'] ?></label>
-      <input type="text" name="setup_db_user" value="<?= htmlspecialchars($setupInput['db_user'] ?? getenv('WEBDASH_DB_USER') ?: '') ?>" placeholder="root">
-    </div>
-    <div class="field">
-      <label><?= $t['db_pass'] ?></label>
-      <input type="password" name="setup_db_pass" value="<?= htmlspecialchars($setupInput['db_pass'] ?? (getenv('WEBDASH_DB_PASS') !== false ? getenv('WEBDASH_DB_PASS') : '')) ?>" placeholder="" autocomplete="off">
-    </div>
-    <?php else: ?>
-    <div style="margin-top:1rem;padding:.75rem 1rem;border-radius:10px;background:var(--accent-dim);border:1px solid var(--border);font-size:.8rem;color:var(--text-muted)">
-      🐳 <?= $t['docker_mode'] ?> &mdash; <?= $lang === 'de' ? 'Datenbank und Scan-Verzeichnis werden automatisch konfiguriert.' : 'Database and scan directory are configured automatically.' ?>
     </div>
     <?php endif; ?>
     <button type="submit" class="btn"><?= $t['setup_save'] ?></button>
@@ -1972,6 +1736,27 @@ body{
   background-attachment:scroll, fixed;
   transition:background-color .35s,color .35s;
 }
+
+/* Hintergrundbild / Background image */
+body.has-bg{
+  background:center/cover no-repeat fixed !important;
+  background-size:cover !important;
+}
+body.has-bg.bg-custom{background-image:url('/?asset=bg-image') !important}
+body.has-bg.bg-preset{background-image:url('/?asset=wallpaper&theme=dark') !important}
+.light body.has-bg.bg-preset,body.has-bg.bg-preset.light{background-image:url('/?asset=wallpaper&theme=light') !important}
+body.has-bg::after{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:rgba(0,0,0,var(--bg-overlay-opacity,.45));
+  backdrop-filter:blur(var(--bg-blur,2px));
+  -webkit-backdrop-filter:blur(var(--bg-blur,2px));
+  pointer-events:none;
+}
+.light body.has-bg::after,body.has-bg.light::after{
+  background:rgba(255,255,255,var(--bg-overlay-opacity,.45));
+}
+body.has-bg .wrap{position:relative;z-index:1}
+
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
@@ -2044,8 +1829,13 @@ header{
 .user-logo-img{height:72px;width:auto;max-width:200px;object-fit:contain;object-position:center top;display:inline-block}
 .user-count{display:inline-block;font-size:.72rem;font-weight:500;color:var(--accent);background:var(--accent-dim);padding:.25rem .75rem;border-radius:20px}
 
+.sys-bottom-row{
+  display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;
+}
+.sys-bottom-row .services{margin-bottom:0;flex-shrink:0}
+.sys-bottom-row .google-search{margin-bottom:0;flex:1;min-width:200px}
 .google-search{
-  display:flex;align-items:center;max-width:800px;margin:0 auto 1.5rem;position:relative;
+  display:flex;align-items:center;position:relative;
   animation:fadeUp .5s ease both;animation-delay:.15s;
 }
 .google-search-icon{
@@ -2065,7 +1855,7 @@ header{
 
 .user-projects{
   display:grid;grid-template-columns:repeat(auto-fill,minmax(max(220px,calc((100% - 3rem)/4)),1fr));gap:1rem;
-  max-width:800px;margin:0 auto 2rem;
+  margin-bottom:2rem;
 }
 .uproj{
   background:var(--surface);border:1px solid var(--border);border-radius:18px;
@@ -2136,7 +1926,7 @@ header{
 .res-detail{font-family:var(--mono);font-size:.68rem;color:var(--text-muted);margin-top:.45rem}
 
 /* Admin: Services */
-.services{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:2.75rem}
+.services{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem}
 .svc{
   display:inline-flex;align-items:center;gap:.45rem;
   padding:.4rem .85rem;border-radius:8px;font-size:.75rem;font-weight:500;
@@ -2222,8 +2012,6 @@ header{
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .modal-error{font-size:.75rem;color:var(--danger);margin-top:.5rem;min-height:1.2em}
 .modal-success{font-size:.78rem;color:var(--success);margin-top:.5rem;text-align:center}
-.forgot-link{display:block;text-align:center;margin-top:.75rem;font-size:.78rem;color:var(--text-muted);text-decoration:none;transition:color .25s}
-.forgot-link:hover{color:var(--accent)}
 .modal-submit{
   width:100%;padding:.85rem;border-radius:12px;border:none;margin-top:1.25rem;
   background:var(--accent);color:#fff;font-family:var(--font);font-size:.9rem;
@@ -2257,18 +2045,6 @@ header{
 .ml-delete:hover{opacity:1;color:var(--danger)}
 
 /* ========== User cards ========== */
-.user-list{display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem}
-.user-card{border:1px solid var(--border);border-radius:10px;background:var(--surface-2);overflow:hidden;transition:border-color .25s}
-.user-card:hover{border-color:var(--border-hover)}
-.user-card-head{display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;cursor:pointer;user-select:none}
-.user-card-avatar{width:34px;height:34px;border-radius:8px;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0}
-.user-card-info{flex:1;min-width:0}
-.user-card-name{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.user-card-meta{display:flex;align-items:center;gap:.6rem;font-size:.7rem;color:var(--text-dim);margin-top:.1rem;flex-wrap:wrap}
-.user-card-chevron{color:var(--text-dim);transition:transform .25s;flex-shrink:0}
-.user-card.open .user-card-chevron{transform:rotate(180deg)}
-.user-card-edit{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;padding:0 .85rem}
-.user-card.open .user-card-edit{max-height:260px;padding:.6rem .85rem .85rem;border-top:1px solid var(--border)}
 
 /* ========== Footer ========== */
 footer{
@@ -2286,7 +2062,12 @@ footer{
   transition:background .35s,border-color .35s;
 }
 .light .settings-bar{box-shadow:0 1px 2px var(--shadow)}
-.settings-row{display:flex;gap:1.5rem;margin-top:.85rem;flex-wrap:wrap;align-items:flex-end}
+.settings-group-label{
+  font-size:.68rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.1em;
+  margin-top:1.1rem;padding-top:.75rem;border-top:1px solid var(--border);
+}
+.settings-group-label:first-of-type{margin-top:.75rem}
+.settings-row{display:flex;gap:1.5rem;margin-top:.6rem;flex-wrap:wrap;align-items:flex-end}
 .settings-item{display:flex;flex-direction:column;gap:.4rem}
 .settings-label{font-size:.7rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
 .settings-logo-actions{display:flex;gap:.5rem;align-items:center}
@@ -2302,13 +2083,6 @@ footer{
 }
 .settings-input:focus{border-color:var(--accent)}
 
-/* DB status badge */
-.db-status-badge{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:500;padding:.25rem .65rem;border-radius:20px;letter-spacing:.02em}
-.db-status-badge.connected{background:rgba(16,185,129,.12);color:var(--success);border:1px solid rgba(16,185,129,.25)}
-.db-status-badge.disconnected{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25)}
-.db-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.db-status-badge.connected .db-status-dot{background:var(--success);box-shadow:0 0 6px var(--success)}
-.db-status-badge.disconnected .db-status-dot{background:var(--danger)}
 
 /* Directory visibility toggles */
 .dir-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem}
@@ -2359,8 +2133,6 @@ footer{
 .slog-info{color:var(--text-dim)}.slog-info::before{content:'● '}
 .slog-warn{color:var(--warn)}.slog-warn::before{content:'⚠ '}
 .slog-err{color:var(--danger)}.slog-err::before{content:'✗ '}
-/* Sync hint */
-.sync-hint{margin-top:.65rem;padding:.75rem .85rem;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px}
 
 .empty{text-align:center;padding:3rem;color:var(--text-muted);font-size:.9rem}
 
@@ -2375,6 +2147,8 @@ footer{
   .hdr-host{overflow:visible;white-space:normal;text-align:center}
   .hdr-right{justify-content:center;flex-wrap:wrap}
   .stats{grid-template-columns:repeat(2,1fr)}
+  .sys-bottom-row{flex-direction:column;align-items:stretch}
+  .sys-bottom-row .google-search{min-width:0}
   .projects,.user-projects{grid-template-columns:1fr}
   .user-welcome h2{font-size:1.2rem}
 }
@@ -2407,13 +2181,32 @@ footer{
 .admin-tab.active svg{opacity:1;stroke:var(--accent)}
 .tab-panel{display:none}
 .tab-panel.active{display:block;animation:fadeUp .3s ease both}
+.forgot-link{display:block;text-align:center;margin-top:.75rem;font-size:.78rem;color:var(--text-muted);text-decoration:none;transition:color .25s}
+.forgot-link:hover{color:var(--accent)}
+.user-list{display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem}
+.user-card{border:1px solid var(--border);border-radius:10px;background:var(--surface-2);overflow:hidden;transition:border-color .25s}
+.user-card:hover{border-color:var(--border-hover)}
+.user-card-head{display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;cursor:pointer;user-select:none}
+.user-card-avatar{width:34px;height:34px;border-radius:8px;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0}
+.user-card-info{flex:1;min-width:0}
+.user-card-name{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-card-meta{display:flex;align-items:center;gap:.6rem;font-size:.7rem;color:var(--text-dim);margin-top:.1rem;flex-wrap:wrap}
+.user-card-chevron{color:var(--text-dim);transition:transform .25s;flex-shrink:0}
+.user-card.open .user-card-chevron{transform:rotate(180deg)}
+.user-card-edit{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;padding:0 .85rem}
+.user-card.open .user-card-edit{max-height:260px;padding:.6rem .85rem .85rem;border-top:1px solid var(--border)}
 @media(max-width:640px){
-  .admin-tabs{display:grid;grid-template-columns:1fr 1fr}
+  .admin-tabs{display:grid;grid-template-columns:1fr 1fr 1fr}
   .admin-tab{justify-content:center;padding:.5rem .6rem;font-size:.78rem}
 }
 </style>
 </head>
-<body>
+<?php
+  $bgBlurPct = (int)($dashCfg['bg_blur'] ?? 10);
+  $bgBright  = (int)($dashCfg['bg_brightness'] ?? 55);
+  $bgBlurPx  = round($bgBlurPct * 0.2, 1);
+  $bgDim     = round((100 - $bgBright) / 100, 2);
+?><body<?php if ($hasBgAny): ?> class="has-bg <?= $hasBgPreset ? 'bg-preset' : 'bg-custom' ?>" style="--bg-blur:<?= $bgBlurPx ?>px;--bg-overlay-opacity:<?= $bgDim ?>"<?php endif; ?>>
 <div class="wrap">
 
   <!-- ==================== HEADER ==================== -->
@@ -2465,7 +2258,7 @@ footer{
     </div>
   </header>
 
-  <?php if ($isAdmin): ?>
+  <?php if ($isAdmin || $showStats): ?>
   <div class="stats">
     <div class="stat"><div class="stat-value"><?= htmlspecialchars($phpVersion) ?></div><div class="stat-label"><?= $t['php_ver'] ?></div></div>
     <div class="stat"><div class="stat-value"><?= htmlspecialchars($apacheVersion) ?></div><div class="stat-label">Apache</div></div>
@@ -2476,6 +2269,7 @@ footer{
   </div>
   <?php endif; ?>
 
+  <?php if ($isAdmin || $showResources): ?>
   <div class="resources" id="sysRes">
     <div class="res-card">
       <div class="res-top"><span class="res-name"><?= $t['cpu_load'] ?></span><span class="res-pct" id="cpuPct" style="color:<?= barColor($loadPercent) ?>"><?= $loadPercent ?>%</span></div>
@@ -2493,19 +2287,24 @@ footer{
       <div class="res-detail" id="diskDetail"><?= fmtBytes($diskUsed) ?> / <?= fmtBytes($diskTotal) ?> <?= $t['used'] ?> &mdash; <?= fmtBytes($diskFree) ?> <?= $t['free'] ?></div>
     </div>
   </div>
+  <?php endif; ?>
+
+  <div class="sys-bottom-row">
+    <?php if (($isAdmin || $showServices) && !empty($services)): ?>
+    <div class="services">
+      <?php foreach ($services as $svc): ?>
+      <div class="svc">
+        <span class="svc-dot" style="background:<?= $svc['active'] ? 'var(--success)' : 'var(--danger)' ?>;<?= $svc['active'] ? 'box-shadow:0 0 6px var(--success)' : '' ?>"></span>
+        <?= htmlspecialchars($svc['name']) ?>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+    <?php if ($googleSearchEnabled) renderGoogleSearch(); ?>
+  </div>
 
 <?php if (!$isAdmin): ?>
   <!-- ==================== USER VIEW ==================== -->
-
-  <div class="user-welcome">
-    <h2>webdash</h2>
-    <p><?= $t['intro'] ?></p>
-    <?php if (!empty($projects)): ?>
-      <span class="user-count"><?= sprintf($t['apps_count'], count($onlineProjects), count($projects)) ?></span>
-    <?php endif; ?>
-  </div>
-
-  <?php if ($googleSearchEnabled) renderGoogleSearch(); ?>
 
   <?php if (empty($projects)): ?>
     <div class="empty"><?= $t['no_apps'] ?></div>
@@ -2554,13 +2353,9 @@ footer{
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       <?= $t['tab_general'] ?>
     </button>
-    <button class="admin-tab" data-tab="connections" onclick="switchTab('connections')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-      <?= $t['tab_connections'] ?>
-    </button>
-    <button class="admin-tab" data-tab="users" onclick="switchTab('users')">
+    <button class="admin-tab" data-tab="email-users" onclick="switchTab('email-users')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      <?= $t['users'] ?>
+      <?= $t['tab_email_users'] ?>
     </button>
     <button class="admin-tab" data-tab="server" onclick="switchTab('server')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
@@ -2574,6 +2369,9 @@ footer{
   <!-- Settings Bar -->
   <div class="settings-bar">
     <div class="section-title" style="margin-bottom:0"><?= $t['settings'] ?></div>
+
+    <!-- Darstellung / Appearance: Logos -->
+    <div class="settings-group-label"><?= $lang === 'de' ? 'Darstellung' : 'Appearance' ?></div>
     <div class="settings-row">
       <form method="POST" action="/" enctype="multipart/form-data" id="logoDarkForm" class="settings-item">
         <label class="settings-label"><?= $t['logo_dark'] ?></label>
@@ -2607,12 +2405,82 @@ footer{
           <?php endif; ?>
         </div>
       </form>
-      <?php if ($dockerMode): ?>
+    </div>
+
+    <!-- Hintergrundbild / Background image -->
+    <?php
+      $sBgBlur   = (int)($dashCfg['bg_blur'] ?? 10);
+      $sBgBright = (int)($dashCfg['bg_brightness'] ?? 55);
+    ?>
+    <div class="settings-row" style="margin-top:.6rem">
       <div class="settings-item">
-        <label class="settings-label"><?= $t['docker_mode'] ?></label>
-        <span style="display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;border-radius:8px;background:var(--accent-dim);border:1px solid var(--border);font-size:.78rem;color:var(--accent);font-weight:500">🐳 <?= $t['docker_mode'] ?></span>
+        <label class="settings-label"><?= $t['bg_image'] ?></label>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <form method="POST" action="/" style="display:inline">
+            <input type="hidden" name="save_bg_mode" value="1">
+            <input type="hidden" name="bg_mode" value="<?= $hasBgPreset ? '' : 'preset' ?>">
+            <button type="submit" style="cursor:pointer;border:2px solid <?= $hasBgPreset ? 'var(--accent)' : 'var(--border)' ?>;border-radius:8px;padding:2px;background:none;position:relative;transition:border-color .25s" title="<?= $lang === 'de' ? 'Standardbilder' : 'Default wallpapers' ?>">
+              <div style="display:flex;gap:2px">
+                <img src="/?asset=wallpaper&theme=dark" alt="Dark" style="height:36px;width:52px;object-fit:cover;border-radius:5px 0 0 5px">
+                <img src="/?asset=wallpaper&theme=light" alt="Light" style="height:36px;width:52px;object-fit:cover;border-radius:0 5px 5px 0">
+              </div>
+              <?php if ($hasBgPreset): ?><span style="position:absolute;top:-6px;right:-6px;width:14px;height:14px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></span><?php endif; ?>
+            </button>
+          </form>
+          <form method="POST" action="/" enctype="multipart/form-data" id="bgImageForm" style="display:inline">
+            <?php if ($hasBgCustom): ?>
+              <div style="display:inline-flex;border:2px solid var(--accent);border-radius:8px;padding:2px;position:relative">
+                <img src="/?asset=bg-image&v=<?= filemtime(DASH_BG_IMAGE . '.' . $dashCfg['bg_image_ext']) ?>" alt="BG" style="height:36px;width:52px;object-fit:cover;border-radius:6px">
+                <span style="position:absolute;top:-6px;right:-6px;width:14px;height:14px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></span>
+              </div>
+            <?php endif; ?>
+            <label class="btn-link" style="cursor:pointer">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <?= $hasBgCustom ? $t['change'] : $t['upload_btn'] ?>
+              <input type="file" name="bg_image" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" onchange="this.form.submit()" style="display:none">
+            </label>
+          </form>
+          <?php if ($hasBgAny): ?>
+            <form method="POST" action="/" style="display:inline">
+              <input type="hidden" name="save_bg_mode" value="1">
+              <input type="hidden" name="bg_mode" value="">
+              <button type="submit" class="btn-link danger" style="border:none;background:none;cursor:pointer;font-family:var(--font)"><?= $t['remove'] ?></button>
+            </form>
+          <?php endif; ?>
+        </div>
+        <?php if ($hasBgPreset): ?>
+        <div style="font-size:.6rem;color:var(--text-dim);margin-top:.25rem">
+          <?php $first = true; foreach (DASH_PRESET_WALLPAPERS as $theme => $wp): ?>
+            <?= $first ? '' : ' &middot; ' ?><a href="<?= $wp['url'] ?>" target="_blank" rel="noopener" style="color:var(--text-dim)"><?= $wp['credit'] ?></a> (<?= $wp['source'] ?>)
+          <?php $first = false; endforeach; ?>
+        </div>
+        <?php endif; ?>
       </div>
+      <?php if ($hasBgAny): ?>
+      <form method="POST" action="/" class="settings-item" id="bgBlurForm">
+        <input type="hidden" name="save_bg_effects" value="1">
+        <input type="hidden" name="bg_brightness" value="<?= $sBgBright ?>">
+        <label class="settings-label"><?= $t['bg_blur'] ?></label>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <input type="range" name="bg_blur" min="0" max="100" value="<?= $sBgBlur ?>" style="width:110px;accent-color:var(--accent)" oninput="document.body.style.setProperty('--bg-blur',(this.value*0.2)+'px');this.nextElementSibling.textContent=this.value+'%'" onchange="this.form.submit()">
+          <span style="font-size:.75rem;color:var(--text-muted);min-width:30px"><?= $sBgBlur ?>%</span>
+        </div>
+      </form>
+      <form method="POST" action="/" class="settings-item" id="bgBrightForm">
+        <input type="hidden" name="save_bg_effects" value="1">
+        <input type="hidden" name="bg_blur" value="<?= $sBgBlur ?>">
+        <label class="settings-label"><?= $t['bg_brightness'] ?></label>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <input type="range" name="bg_brightness" min="0" max="100" value="<?= $sBgBright ?>" style="width:110px;accent-color:var(--accent)" oninput="document.body.style.setProperty('--bg-overlay-opacity',(100-this.value)/100);this.nextElementSibling.textContent=this.value+'%'" onchange="this.form.submit()">
+          <span style="font-size:.75rem;color:var(--text-muted);min-width:30px"><?= $sBgBright ?>%</span>
+        </div>
+      </form>
       <?php endif; ?>
+    </div>
+
+    <!-- Funktionen / Features -->
+    <div class="settings-group-label"><?= $lang === 'de' ? 'Funktionen' : 'Features' ?></div>
+    <div class="settings-row">
       <form method="POST" action="/" class="settings-item">
         <label class="settings-label"><?= $t['google_search'] ?></label>
         <input type="hidden" name="save_google_search" value="1">
@@ -2622,14 +2490,62 @@ footer{
           <span class="dir-toggle-switch"></span>
         </label>
       </form>
+      <form method="POST" action="/" class="settings-item">
+        <label class="settings-label"><?= $t['show_stats'] ?></label>
+        <input type="hidden" name="save_dashboard_sections" value="1">
+        <input type="hidden" name="show_resources" value="<?= $showResources ? '1' : '' ?>">
+        <input type="hidden" name="show_services" value="<?= $showServices ? '1' : '' ?>">
+        <label class="dir-toggle" style="margin:0">
+          <input type="checkbox" name="show_stats" value="1"
+                 onchange="this.form.submit()" <?= $showStats ? 'checked' : '' ?>>
+          <span class="dir-toggle-switch"></span>
+        </label>
+      </form>
+      <form method="POST" action="/" class="settings-item">
+        <label class="settings-label"><?= $t['show_resources'] ?></label>
+        <input type="hidden" name="save_dashboard_sections" value="1">
+        <input type="hidden" name="show_stats" value="<?= $showStats ? '1' : '' ?>">
+        <input type="hidden" name="show_services" value="<?= $showServices ? '1' : '' ?>">
+        <label class="dir-toggle" style="margin:0">
+          <input type="checkbox" name="show_resources" value="1"
+                 onchange="this.form.submit()" <?= $showResources ? 'checked' : '' ?>>
+          <span class="dir-toggle-switch"></span>
+        </label>
+      </form>
+      <form method="POST" action="/" class="settings-item">
+        <label class="settings-label"><?= $t['show_services'] ?></label>
+        <input type="hidden" name="save_dashboard_sections" value="1">
+        <input type="hidden" name="show_stats" value="<?= $showStats ? '1' : '' ?>">
+        <input type="hidden" name="show_resources" value="<?= $showResources ? '1' : '' ?>">
+        <label class="dir-toggle" style="margin:0">
+          <input type="checkbox" name="show_services" value="1"
+                 onchange="this.form.submit()" <?= $showServices ? 'checked' : '' ?>>
+          <span class="dir-toggle-switch"></span>
+        </label>
+      </form>
+    </div>
+
+    <!-- System -->
+    <div class="settings-group-label">System</div>
+    <div class="settings-row">
+      <?php if ($dockerMode): ?>
+      <div class="settings-item">
+        <label class="settings-label"><?= $t['docker_mode'] ?></label>
+        <span style="display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;border-radius:8px;background:var(--accent-dim);border:1px solid var(--border);font-size:.78rem;color:var(--accent);font-weight:500">🐳 <?= $t['docker_mode'] ?></span>
+      </div>
+      <?php endif; ?>
       <div class="settings-item">
         <label class="settings-label">Update (v<?= WEBDASH_VERSION ?>)</label>
         <div class="update-wrap" id="updateWrap">
+          <?php if ($dockerMode): ?>
+          <span id="updateResult"><span class="spinner"></span></span>
+          <?php else: ?>
           <button type="button" class="btn-update" id="btnCheckUpdate" onclick="checkUpdate()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
             <?= $t['check_update'] ?>
           </button>
           <span id="updateResult"></span>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -2645,60 +2561,11 @@ footer{
     <?php endif; ?>
   </div>
 
+
   </div><!-- /tab-general -->
 
-  <!-- Tab: Connections -->
-  <div class="tab-panel" id="tab-connections">
-
-  <!-- DB & Password Settings -->
-  <?php
-    $dbMsg = $_SESSION['dashboard_db_msg'] ?? null; unset($_SESSION['dashboard_db_msg']);
-    $dbInput = $_SESSION['dashboard_db_input'] ?? null; unset($_SESSION['dashboard_db_input']);
-    $dbValHost = $dbInput['dbHost'] ?? $dashCfg['db_host'] ?? '';
-    $dbValName = $dbInput['dbName'] ?? $dashCfg['db_name'] ?? '';
-    $dbValUser = $dbInput['dbUser'] ?? $dashCfg['db_user'] ?? '';
-    $dbValPass = $dbInput['dbPass'] ?? $dashCfg['db_pass'] ?? '';
-    $dbConnected = false;
-    if ($dbValName) {
-        $dbCheck = getDashboardDB();
-        $dbConnected = $dbCheck !== null;
-    }
-  ?>
-  <div class="settings-bar">
-    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-      <div class="section-title" style="margin-bottom:0"><?= $t['db_config'] ?></div>
-      <?php if ($dbValName): ?>
-        <span class="db-status-badge <?= $dbConnected ? 'connected' : 'disconnected' ?>">
-          <span class="db-status-dot"></span>
-          <?= $dbConnected ? ($lang === 'de' ? 'Verbunden' : 'Connected') : ($lang === 'de' ? 'Nicht verbunden' : 'Not connected') ?>
-        </span>
-      <?php endif; ?>
-    </div>
-    <?php if ($dbMsg): ?>
-      <div style="margin-top:.5rem;font-size:.78rem;color:<?= $dbMsg[0] === 'ok' ? 'var(--success)' : 'var(--danger)' ?>"><?= htmlspecialchars($dbMsg[1]) ?></div>
-    <?php endif; ?>
-    <div class="settings-row">
-      <form method="POST" action="/" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;width:100%">
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['db_host'] ?></label>
-          <input type="text" name="cfg_db_host" value="<?= htmlspecialchars($dbValHost) ?>" class="settings-input" style="min-width:140px" placeholder="localhost">
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['db_name'] ?></label>
-          <input type="text" name="cfg_db_name" value="<?= htmlspecialchars($dbValName) ?>" class="settings-input" style="min-width:140px" placeholder="">
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['db_user'] ?></label>
-          <input type="text" name="cfg_db_user" value="<?= htmlspecialchars($dbValUser) ?>" class="settings-input" style="min-width:120px" placeholder="root">
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['db_pass'] ?></label>
-          <input type="password" name="cfg_db_pass" value="<?= htmlspecialchars($dbValPass) ?>" class="settings-input" style="min-width:120px" autocomplete="off">
-        </div>
-        <button type="submit" class="btn-link"><?= $t['db_save'] ?></button>
-      </form>
-    </div>
-  </div>
+  <!-- Tab: E-Mail & Benutzer / Email & Users -->
+  <div class="tab-panel" id="tab-email-users">
 
   <!-- SMTP Settings -->
   <?php
@@ -2736,11 +2603,11 @@ footer{
         </div>
         <div class="settings-item">
           <label class="settings-label"><?= $t['smtp_user'] ?></label>
-          <input type="text" name="cfg_smtp_user" value="<?= htmlspecialchars($smtpUser) ?>" class="settings-input" style="min-width:160px" placeholder="user@example.com">
+          <input type="text" name="cfg_smtp_user" value="<?= htmlspecialchars($smtpUser) ?>" class="settings-input" style="min-width:160px" placeholder="user@example.com" autocomplete="smtp-account" data-1p-ignore data-lpignore="true" data-bwignore>
         </div>
         <div class="settings-item">
           <label class="settings-label"><?= $t['smtp_pass'] ?></label>
-          <input type="password" name="cfg_smtp_pass" value="" class="settings-input" style="min-width:120px" autocomplete="off" placeholder="<?= $smtpPass ? '••••••' : '' ?>">
+          <input type="text" name="cfg_smtp_pass" value="" class="settings-input" style="min-width:120px;-webkit-text-security:disc" autocomplete="smtp-credential" data-1p-ignore data-lpignore="true" data-bwignore placeholder="<?= $smtpPass ? '••••••' : '' ?>">
         </div>
         <div class="settings-item">
           <label class="settings-label"><?= $t['smtp_from'] ?></label>
@@ -2764,91 +2631,73 @@ footer{
     <?php endif; ?>
   </div>
 
-  </div><!-- /tab-connections -->
-
-  <!-- Tab: Users -->
-  <div class="tab-panel" id="tab-users">
-
-  <!-- User Management -->
+  <!-- User Management / Benutzerverwaltung -->
   <?php
-    $pwMsg  = $_SESSION['dashboard_pw_msg'] ?? null; unset($_SESSION['dashboard_pw_msg']);
     $userMsg = $_SESSION['dashboard_user_msg'] ?? null; unset($_SESSION['dashboard_user_msg']);
-    $anyMsg = $pwMsg ?: $userMsg;
-    $dbUsers = [];
-    $dbUserError = '';
-    $userDb = getDashboardDB();
-    if ($userDb) {
-        try { $dbUsers = $userDb->query('SELECT id, username, name, email, role, created_at FROM users ORDER BY username')->fetchAll(); } catch (Exception $e) { $dbUserError = $e->getMessage(); }
-    }
+    $pwMsg   = $_SESSION['dashboard_pw_msg'] ?? null; unset($_SESSION['dashboard_pw_msg']);
+    $cfgUsers = $dashCfg['users'] ?? [];
   ?>
   <div class="settings-bar">
-    <div class="section-title" style="margin-bottom:0"><?= $t['users'] ?><?php if ($userDb): ?> (<?= count($dbUsers) ?>)<?php endif; ?></div>
-    <?php if ($anyMsg): ?>
-      <div style="margin-top:.5rem;font-size:.78rem;color:<?= $anyMsg[0] === 'ok' ? 'var(--success)' : 'var(--danger)' ?>"><?= $anyMsg[1] ?></div>
+    <div class="section-title" style="margin-bottom:0"><?= $t['users'] ?> (<?= count($cfgUsers) + 1 ?>)</div>
+    <?php if ($userMsg): ?>
+      <div style="margin-top:.5rem;font-size:.78rem;color:<?= $userMsg[0] === 'ok' ? 'var(--success)' : 'var(--danger)' ?>"><?= htmlspecialchars($userMsg[1]) ?></div>
     <?php endif; ?>
-    <?php if ($dbUserError): ?>
-      <div style="margin-top:.5rem;font-size:.75rem;color:var(--danger)">DB-Error: <?= htmlspecialchars($dbUserError) ?></div>
+    <?php if ($pwMsg): ?>
+      <div style="margin-top:.5rem;font-size:.78rem;color:<?= $pwMsg[0] === 'ok' ? 'var(--success)' : 'var(--danger)' ?>"><?= htmlspecialchars($pwMsg[1]) ?></div>
     <?php endif; ?>
-    <?php
-      $selfInDb = false;
-      $sessionUser = $_SESSION['dashboard_user']['username'] ?? '';
-      if ($userDb && $sessionUser) {
-          foreach ($dbUsers as $u) { if ($u['username'] === $sessionUser) { $selfInDb = true; break; } }
-      }
-    ?>
-    <?php if ($userDb && !$selfInDb && $sessionUser): ?>
-      <div class="sync-hint">
-        <div style="font-size:.82rem;font-weight:600;margin-bottom:.35rem"><?= $lang === 'de' ? 'Dein Account ('.$sessionUser.') ist nicht in der Datenbank' : 'Your account ('.$sessionUser.') is not in the database' ?></div>
-        <form method="POST" action="/" style="display:flex;gap:.6rem;align-items:flex-end;flex-wrap:wrap">
-          <div class="settings-item">
-            <label class="settings-label"><?= $t['email'] ?></label>
-            <input type="email" name="sync_self_email" class="settings-input" style="min-width:180px" placeholder="user@example.com">
-          </div>
-          <div class="settings-item">
-            <label class="settings-label"><?= $lang === 'de' ? 'Passwort festlegen' : 'Set password' ?></label>
-            <input type="password" name="sync_self_pw" class="settings-input" style="min-width:160px" required minlength="4" autocomplete="new-password">
-          </div>
-          <button type="submit" class="btn-update"><?= $lang === 'de' ? 'In DB anlegen' : 'Create in DB' ?></button>
-        </form>
-      </div>
-    <?php endif; ?>
-    <?php
-      $selfEmailMissing = false;
-      if ($userDb && !empty($dbUsers)) {
-          foreach ($dbUsers as $u) {
-              if ($u['username'] === ($_SESSION['dashboard_user']['username'] ?? '') && empty($u['email'])) {
-                  $selfEmailMissing = true; break;
-              }
-          }
-      }
-    ?>
-    <?php if ($selfEmailMissing): ?>
-      <div style="margin-top:.5rem;padding:.6rem .85rem;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);font-size:.78rem;color:#f59e0b;display:flex;align-items:center;gap:.5rem">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <?= $lang === 'de' ? 'Bitte hinterlege deine E-Mail-Adresse, damit die Passwort-Zurücksetzung funktioniert.' : 'Please set your email address to enable password reset.' ?>
-      </div>
-    <?php endif; ?>
-    <?php if ($userDb && !empty($dbUsers)): ?>
       <div class="user-list">
-        <?php foreach ($dbUsers as $u):
-          $isSelf = $u['username'] === ($_SESSION['dashboard_user']['username'] ?? '');
-        ?>
-        <div class="user-card<?= ($isSelf && empty($u['email'])) ? ' open' : '' ?>" id="uc<?= $u['id'] ?>">
-          <div class="user-card-head" onclick="toggleUserEdit(<?= $u['id'] ?>)">
-            <div class="user-card-avatar"><?= strtoupper(mb_substr($u['name'] ?: $u['username'], 0, 1)) ?></div>
+        <!-- Admin-User (config.json admin_pass) -->
+        <?php $adminEmail = $dashCfg['admin_email'] ?? ''; ?>
+        <div class="user-card" id="ucA">
+          <div class="user-card-head" onclick="toggleUserEdit('A')">
+            <div class="user-card-avatar">A</div>
             <div class="user-card-info">
-              <div class="user-card-name"><?= htmlspecialchars($u['name'] ?: $u['username']) ?><?php if ($isSelf): ?> <span style="font-size:.65rem;color:var(--accent)">(<?= $lang === 'de' ? 'Du' : 'You' ?>)</span><?php endif; ?></div>
+              <div class="user-card-name">Admin <span style="font-size:.65rem;color:var(--accent)">(<?= $lang === 'de' ? 'Hauptadmin' : 'Main admin' ?>)</span></div>
               <div class="user-card-meta">
-                <span style="font-family:var(--mono)"><?= htmlspecialchars($u['username']) ?></span>
-                <?php if (!empty($u['email'])): ?><span><?= htmlspecialchars($u['email']) ?></span><?php endif; ?>
-                <span><?= date('d.m.Y', strtotime($u['created_at'])) ?></span>
+                <span style="font-family:var(--mono)">admin</span>
+                <?php if ($adminEmail): ?><span><?= htmlspecialchars($adminEmail) ?></span><?php endif; ?>
               </div>
             </div>
             <svg class="user-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
-          <div class="user-card-edit" id="ue<?= $u['id'] ?>">
+          <div class="user-card-edit" id="ueA">
             <form method="POST" action="/" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
-              <input type="hidden" name="edit_user_id" value="<?= $u['id'] ?>">
+              <input type="hidden" name="save_admin_profile" value="1">
+              <div class="settings-item">
+                <label class="settings-label"><?= $t['email'] ?></label>
+                <input type="email" name="admin_email" value="<?= htmlspecialchars($adminEmail) ?>" class="settings-input" style="min-width:200px" placeholder="admin@example.com">
+              </div>
+              <div class="settings-item">
+                <label class="settings-label"><?= $t['users_new_pw'] ?></label>
+                <input type="password" name="new_admin_pw" class="settings-input" style="min-width:160px" minlength="4" autocomplete="new-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
+              </div>
+              <div class="settings-item">
+                <label class="settings-label"><?= $t['confirm_password'] ?></label>
+                <input type="password" name="confirm_admin_pw" class="settings-input" style="min-width:160px" autocomplete="new-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
+              </div>
+              <button type="submit" class="btn-update" style="height:34px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                <?= $t['users_save'] ?>
+              </button>
+            </form>
+          </div>
+        </div>
+        <?php foreach ($cfgUsers as $idx => $u): ?>
+        <div class="user-card" id="uc<?= $idx ?>">
+          <div class="user-card-head" onclick="toggleUserEdit(<?= $idx ?>)">
+            <div class="user-card-avatar"><?= strtoupper(mb_substr($u['name'] ?? $u['username'], 0, 1)) ?></div>
+            <div class="user-card-info">
+              <div class="user-card-name"><?= htmlspecialchars($u['name'] ?? $u['username']) ?></div>
+              <div class="user-card-meta">
+                <span style="font-family:var(--mono)"><?= htmlspecialchars($u['username']) ?></span>
+                <?php if (!empty($u['email'])): ?><span><?= htmlspecialchars($u['email']) ?></span><?php endif; ?>
+              </div>
+            </div>
+            <svg class="user-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="user-card-edit" id="ue<?= $idx ?>">
+            <form method="POST" action="/" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+              <input type="hidden" name="edit_user_idx" value="<?= $idx ?>">
               <div class="settings-item">
                 <label class="settings-label"><?= $t['users_name'] ?></label>
                 <input type="text" name="edit_user_name" value="<?= htmlspecialchars($u['name'] ?? '') ?>" class="settings-input" style="min-width:150px">
@@ -2865,87 +2714,38 @@ footer{
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                 <?= $t['users_save'] ?>
               </button>
-              <?php if (!$isSelf): ?>
-                <a href="/?delete_user=<?= $u['id'] ?>" class="btn-link danger" style="font-size:.72rem;margin-left:auto" onclick="return confirm('<?= $t['users_delete_confirm'] ?>')"><?= $t['users_delete'] ?></a>
-              <?php endif; ?>
+              <a href="/?delete_user=<?= $idx ?>" class="btn-link danger" style="font-size:.72rem;margin-left:auto" onclick="return confirm('<?= $t['users_delete_confirm'] ?>')"><?= $t['users_delete'] ?></a>
             </form>
           </div>
         </div>
         <?php endforeach; ?>
       </div>
-      <div class="section-title" style="margin-top:1rem;margin-bottom:.5rem"><?= $t['users_add'] ?></div>
-      <form method="POST" action="/" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['users_name'] ?></label>
-          <input type="text" name="add_user_name" class="settings-input" style="min-width:140px" required>
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['username'] ?></label>
-          <input type="text" name="add_user_username" class="settings-input" style="min-width:120px" required>
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['email'] ?></label>
-          <input type="email" name="add_user_email" class="settings-input" style="min-width:160px" placeholder="user@example.com">
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['password'] ?></label>
-          <input type="password" name="add_user_password" class="settings-input" style="min-width:120px" required minlength="4" autocomplete="new-password">
-        </div>
-        <button type="submit" class="btn-update"><?= $t['users_add'] ?></button>
-      </form>
-    <?php elseif ($userDb): ?>
-      <p style="font-size:.8rem;color:var(--text-dim);margin-top:.5rem"><?= $t['users_none'] ?></p>
-      <div class="section-title" style="margin-top:1rem;margin-bottom:.5rem"><?= $t['users_add'] ?></div>
-      <form method="POST" action="/" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['users_name'] ?></label>
-          <input type="text" name="add_user_name" class="settings-input" style="min-width:140px" required>
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['username'] ?></label>
-          <input type="text" name="add_user_username" class="settings-input" style="min-width:120px" required>
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['email'] ?></label>
-          <input type="email" name="add_user_email" class="settings-input" style="min-width:160px" placeholder="user@example.com">
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['password'] ?></label>
-          <input type="password" name="add_user_password" class="settings-input" style="min-width:120px" required minlength="4" autocomplete="new-password">
-        </div>
-        <button type="submit" class="btn-update"><?= $t['users_add'] ?></button>
-      </form>
-    <?php else: ?>
-      <p style="font-size:.8rem;color:var(--text-dim);margin-top:.5rem;margin-bottom:.75rem"><?= $t['users_no_db'] ?></p>
-      <div class="section-title" style="margin-bottom:.5rem"><?= $t['admin_pw_change'] ?></div>
-      <form method="POST" action="/" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['new_password'] ?></label>
-          <input type="password" name="new_admin_pw" class="settings-input" style="min-width:180px" autocomplete="new-password" required minlength="4">
-        </div>
-        <div class="settings-item">
-          <label class="settings-label"><?= $t['confirm_password'] ?></label>
-          <input type="password" name="confirm_admin_pw" class="settings-input" style="min-width:180px" autocomplete="new-password" required minlength="4">
-        </div>
-        <button type="submit" class="btn-link"><?= $t['admin_pw_change'] ?></button>
-      </form>
-    <?php endif; ?>
+    <div class="section-title" style="margin-top:1rem;margin-bottom:.5rem"><?= $t['users_add'] ?></div>
+    <form method="POST" action="/" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+      <div class="settings-item">
+        <label class="settings-label"><?= $t['users_name'] ?></label>
+        <input type="text" name="add_user_name" class="settings-input" style="min-width:140px" required>
+      </div>
+      <div class="settings-item">
+        <label class="settings-label"><?= $t['username'] ?></label>
+        <input type="text" name="add_user_username" class="settings-input" style="min-width:120px" required>
+      </div>
+      <div class="settings-item">
+        <label class="settings-label"><?= $t['email'] ?></label>
+        <input type="email" name="add_user_email" class="settings-input" style="min-width:160px" placeholder="user@example.com">
+      </div>
+      <div class="settings-item">
+        <label class="settings-label"><?= $t['password'] ?></label>
+        <input type="password" name="add_user_password" class="settings-input" style="min-width:120px" required minlength="4" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn-update"><?= $t['users_add'] ?></button>
+    </form>
   </div>
 
-  </div><!-- /tab-users -->
+  </div><!-- /tab-email-users -->
 
   <!-- Tab: Server -->
   <div class="tab-panel" id="tab-server">
-
-  <div class="section-title"><?= $t['services'] ?></div>
-  <div class="services">
-    <?php foreach ($services as $svc): ?>
-    <div class="svc">
-      <span class="svc-dot" style="background:<?= $svc['active'] ? 'var(--success)' : 'var(--danger)' ?>;<?= $svc['active'] ? 'box-shadow:0 0 6px var(--success)' : '' ?>"></span>
-      <?= htmlspecialchars($svc['name']) ?>
-    </div>
-    <?php endforeach; ?>
-  </div>
 
   <?php if ($dockerMode && !empty($allContainers)): ?>
   <div class="settings-bar" style="margin-top:.5rem;margin-bottom:1.2rem">
@@ -2998,8 +2798,6 @@ footer{
     </form>
   </div>
   <?php endif; ?>
-
-  <?php if ($googleSearchEnabled) renderGoogleSearch('margin-bottom:1rem'); ?>
 
   <div class="section-title"><?= $dockerMode ? $t['docker_containers'] : $t['projects'] ?> (<?= count($projects) ?>)</div>
   <?php if (!empty($projects)): ?>
@@ -3223,15 +3021,17 @@ footer{
              autocomplete="username" placeholder="<?= $t['username'] ?>" required>
       <input type="password" name="password" class="modal-input<?= $loginError ? ' error' : '' ?>" id="loginPass"
              autocomplete="current-password" placeholder="<?= $t['password'] ?>" style="margin-top:.6rem" required>
-      <?php if ($resetSuccess): ?>
-        <div class="modal-success"><?= $t['reset_pw_success'] ?></div>
-      <?php endif; ?>
       <div class="modal-error"><?= htmlspecialchars($loginError) ?></div>
       <button type="submit" class="modal-submit"><?= $t['login'] ?></button>
-      <?php if (!empty($dashCfg['smtp_host'])): ?>
+      <?php $smtpConfigured = !empty($dashCfg['smtp_host'] ?? ''); ?>
+      <?php if ($smtpConfigured): ?>
         <a href="/?action=forgot_password" class="forgot-link"><?= $t['forgot_pw'] ?></a>
       <?php endif; ?>
     </form>
+    <?php $resetSuccess = !empty($_SESSION['dashboard_reset_success']); unset($_SESSION['dashboard_reset_success']); ?>
+    <?php if ($resetSuccess): ?>
+      <div style="font-size:.8rem;color:var(--success);text-align:center;margin-top:.5rem"><?= $t['reset_pw_success'] ?></div>
+    <?php endif; ?>
     <button class="modal-close" onclick="closeAdminModal()"><?= $t['cancel'] ?></button>
   </div>
 </div>
@@ -3265,12 +3065,12 @@ function switchTab(name){
   if(tab)tab.classList.add('active');
   localStorage.setItem('webdash-admin-tab',name);
 }
+function toggleUserEdit(idx){var c=document.getElementById('uc'+idx);c.classList.toggle('open')}
 <?php
-  // Determine forced tab from flash messages
+  // Determine forced tab from flash messages / Erzwungenen Tab aus Flash-Nachrichten bestimmen
   $forceTab = '';
-  if (!empty($dbMsg) || !empty($smtpMsg)) $forceTab = 'connections';
-  elseif (!empty($pwMsg) || !empty($userMsg)) $forceTab = 'users';
-  elseif (!empty($manualMsg)) $forceTab = 'server';
+  if (!empty($manualMsg)) $forceTab = 'server';
+  if (!empty($smtpMsg) || !empty($userMsg) || !empty($pwMsg)) $forceTab = 'email-users';
 ?>
 (function(){
   var forced=<?= json_encode($forceTab) ?>;
@@ -3422,10 +3222,6 @@ function closeAddLinkModal(){
 document.getElementById('addLinkModal').addEventListener('click',function(e){
   if(e.target===this)closeAddLinkModal();
 });
-function toggleUserEdit(id){
-  var card=document.getElementById('uc'+id);
-  card.classList.toggle('open');
-}
 function barCol(p){return p>=90?'#ef4444':p>=75?'#f59e0b':'var(--accent)'}
 function refreshStats(){
   fetch('/?action=system_stats').then(function(r){return r.json()}).then(function(d){
@@ -3445,11 +3241,11 @@ setInterval(refreshStats,15000);
 function checkUpdate(){
   var btn=document.getElementById('btnCheckUpdate');
   var res=document.getElementById('updateResult');
-  btn.disabled=true;
+  if(btn) btn.disabled=true;
   res.innerHTML='<span class="spinner"></span> <?= $t['js_checking'] ?>';
   res.className='update-result';
   fetch('/?action=check_update').then(function(r){return r.json()}).then(function(d){
-    btn.disabled=false;
+    if(btn) btn.disabled=false;
     if(d.error){
       res.className='update-result error';
       res.textContent=d.error;
@@ -3457,22 +3253,25 @@ function checkUpdate(){
     }
     if(d.update_available){
       res.className='update-result available';
-      res.innerHTML='v'+d.latest+' <?= $t['js_available'] ?> ';
+      res.innerHTML='v'+d.latest+' <?= $t['js_available'] ?>';
+      <?php if (!$dockerMode): ?>
       var b=document.createElement('button');
       b.className='btn-update confirm';
       b.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <?= $t['js_update_now'] ?>';
       b.onclick=function(){doUpdate(b)};
       res.appendChild(b);
+      <?php endif; ?>
     }else{
       res.className='update-result success';
       res.textContent='<?= $t['js_current'] ?> (v'+d.current+')';
     }
   }).catch(function(){
-    btn.disabled=false;
+    if(btn) btn.disabled=false;
     res.className='update-result error';
     res.textContent='<?= $t['js_conn_err'] ?>';
   });
 }
+<?php if (!$dockerMode): ?>
 function doUpdate(btn){
   btn.disabled=true;
   var res=document.getElementById('updateResult');
@@ -3501,6 +3300,10 @@ function doUpdate(btn){
     res.textContent='<?= $t['js_update_err'] ?>';
   });
 }
+<?php endif; ?>
+<?php if ($dockerMode): ?>
+checkUpdate();
+<?php endif; ?>
 <?php endif; ?>
 
 <?php if (!$isAdmin): ?>

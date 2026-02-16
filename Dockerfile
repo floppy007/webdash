@@ -3,7 +3,7 @@ FROM php:8.3-apache
 RUN apt-get update \
     && apt-get install -y libcurl4-openssl-dev \
     && a2enmod rewrite \
-    && docker-php-ext-install pdo_mysql curl \
+    && docker-php-ext-install curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN echo '<Directory /var/www/html>\n AllowOverride All\n</Directory>' \
@@ -18,6 +18,7 @@ COPY .dashboard/app-logo-dark.png /opt/webdash/
 COPY .dashboard/app-logo-light.png /opt/webdash/
 COPY .dashboard/favicon-dark.png /opt/webdash/
 COPY .dashboard/favicon-light.png /opt/webdash/
+COPY .dashboard/wallpapers/ /opt/webdash/wallpapers/
 
 RUN mkdir -p /var/www/html/.dashboard \
     && chown -R www-data:www-data /var/www/html/.dashboard

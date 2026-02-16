@@ -7,6 +7,11 @@ for f in app-logo-dark.png app-logo-light.png favicon-dark.png favicon-light.png
     [ -f "/var/www/html/.dashboard/$f" ] || cp "/opt/webdash/$f" "/var/www/html/.dashboard/$f"
 done
 
+# Wallpapers kopieren wenn Verzeichnis fehlt
+if [ ! -d "/var/www/html/.dashboard/wallpapers" ] && [ -d "/opt/webdash/wallpapers" ]; then
+    cp -r /opt/webdash/wallpapers /var/www/html/.dashboard/wallpapers
+fi
+
 # Docker-Socket-Berechtigung: www-data braucht Zugriff auf den Docker Socket
 if [ -S /var/run/docker.sock ]; then
     DOCKER_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null)
