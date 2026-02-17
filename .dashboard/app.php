@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.69');
+define('WEBDASH_VERSION', '1.70');
 
 // --- Sprache / Language ---
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
@@ -992,10 +992,10 @@ $setupInput = $_SESSION['dashboard_setup_input'] ?? null;
 unset($_SESSION['dashboard_setup_input']);
 
 
-// --- Setup-Modus: kein Admin oder keine Benutzer → Ersteinrichtung ---
-// Setup mode: no admin or no users → first-run setup
+// --- Setup-Modus: kein Admin-Passwort → Ersteinrichtung ---
+// Setup mode: no admin password → first-run setup
 $_dashCfgCheck = dashConfig();
-$needsSetup = (empty($_dashCfgCheck['admin_pass']) || empty($_dashCfgCheck['users'])) && !$isAdmin;
+$needsSetup = empty($_dashCfgCheck['admin_pass']) && !$isAdmin;
 
 // --- System-Stats API (AJAX, nur Admin) ---
 if (isset($_GET['action']) && $_GET['action'] === 'system_stats' && $isAdmin) {
@@ -1685,6 +1685,11 @@ function statusLabel(string $s): string {
 }
 $onlineProjects = array_filter($projects, fn($p) => $p['status'] === 'online');
 
+// --- Logo-Check für Setup-Seite ---
+// Logo check for setup page
+$_setupLogoDark  = !empty($_dashCfgCheck['logo_dark_ext']) && file_exists(DASH_LOGO_DARK . '.' . $_dashCfgCheck['logo_dark_ext']);
+$_setupLogoLight = !empty($_dashCfgCheck['logo_light_ext']) && file_exists(DASH_LOGO_LIGHT . '.' . $_dashCfgCheck['logo_light_ext']);
+
 // --- Setup-Seite rendern (Ersteinrichtung) ---
 if ($needsSetup):
 ?>
@@ -1706,6 +1711,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .logo{text-align:center;margin-bottom:1.5rem}
 .logo h1{font-size:1.8rem;font-weight:700;letter-spacing:-.03em;margin-bottom:.25rem}
 .logo p{color:var(--text-muted);font-size:.85rem}
+.setup-logo{max-height:64px;max-width:280px;margin-bottom:.5rem}
+.setup-logo-light{display:none}
+@media(prefers-color-scheme:light){.setup-logo-dark{display:none}.setup-logo-light{display:inline}}
 .lang-toggle{position:absolute;top:1.5rem;right:1.5rem;font-size:.78rem;color:var(--text-muted);text-decoration:none;padding:.35rem .7rem;border-radius:8px;border:1px solid var(--border);transition:all .25s}
 .lang-toggle:hover{color:var(--accent);border-color:var(--border-hover)}
 .section-title{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin:1.5rem 0 .6rem}
@@ -1723,7 +1731,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <div class="card">
   <a href="/?lang=<?= $lang === 'de' ? 'en' : 'de' ?>" class="lang-toggle"><?= $lang === 'de' ? flagDE(16) . ' DE' : flagUS(16) . ' EN' ?></a>
   <div class="logo">
-    <h1>webdash</h1>
+    <?php if ($_setupLogoDark || $_setupLogoLight): ?>
+      <?php if ($_setupLogoDark): ?><img src="/?asset=logo-dark&v=<?= filemtime(DASH_LOGO_DARK . '.' . $_dashCfgCheck['logo_dark_ext']) ?>" alt="Logo" class="setup-logo setup-logo-dark"><?php endif; ?>
+      <?php if ($_setupLogoLight): ?><img src="/?asset=logo-light&v=<?= filemtime(DASH_LOGO_LIGHT . '.' . $_dashCfgCheck['logo_light_ext']) ?>" alt="Logo" class="setup-logo setup-logo-light"><?php endif; ?>
+    <?php else: ?>
+      <h1>webdash</h1>
+    <?php endif; ?>
     <p><?= $t['setup'] ?></p>
   </div>
   <p style="font-size:.85rem;color:var(--text-muted);text-align:center;margin-bottom:1rem"><?= $t['setup_desc'] ?></p>
