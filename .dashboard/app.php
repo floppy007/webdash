@@ -2130,7 +2130,7 @@ header{
 .icon-pick-btn{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;width:2rem;height:2rem;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .2s,transform .15s}
 .icon-pick-btn:hover{border-color:var(--accent);transform:scale(1.15)}
 .homelab-icon{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
-.homelab-icon svg,.homelab-icon img{width:70%;height:70%;border-radius:10px;display:block;object-fit:contain}
+.homelab-icon svg,.homelab-icon img{width:85%;height:85%;border-radius:10px;display:block;object-fit:contain}
 .proj-icon.has-homelab,.uproj-icon.has-homelab{background:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .homelab-grid{display:flex;flex-wrap:wrap;gap:.35rem;max-height:180px;overflow-y:auto;padding:.25rem 0}
 .homelab-pick-btn{background:var(--surface-2);border:2px solid var(--border);border-radius:10px;width:44px;height:44px;padding:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .2s,transform .15s}
