@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.71');
+define('WEBDASH_VERSION', '1.72');
 
 // --- Basispfad / Base path ---
 // Erkennt automatisch, ob webdash in einem Unterverzeichnis läuft
