@@ -273,20 +273,35 @@ function discoverDockerContainers(): array {
         $state = strtolower($c['State'] ?? 'unknown');
         $statusText = $c['Status'] ?? '';
         $containerId = substr($c['Id'] ?? '', 0, 12);
-        // Build URL from first published port
+        // Build URL from port mapping
+        // Priorität / Priority: webdash.url Label > webdash.port Label > PublicPort > PrivatePort (Host-Network)
         $url = '';
+        $host = $dockerHostIp;
+        if (str_contains($host, ':')) $host = explode(':', $host)[0];
         $ports = $c['Ports'] ?? [];
-        foreach ($ports as $p) {
-            if (!empty($p['PublicPort'])) {
-                $proto = ($p['PublicPort'] == 443 || ($p['PrivatePort'] ?? 0) == 443) ? 'https' : 'http';
-                $host = $dockerHostIp;
-                // Strip port from host if present
-                if (str_contains($host, ':')) $host = explode(':', $host)[0];
-                $url = "$proto://$host:" . $p['PublicPort'] . '/';
-                break;
+        // Netzwerk-Modus prüfen / Check network mode
+        $networkMode = $c['HostConfig']['NetworkMode'] ?? '';
+        $isHostNetwork = ($networkMode === 'host');
+        if (!empty($labels['webdash.port'])) {
+            // Expliziter Port per Label / Explicit port via label
+            $labelPort = (int)$labels['webdash.port'];
+            $proto = ($labelPort == 443) ? 'https' : 'http';
+            $url = "$proto://$host:$labelPort/";
+        } else {
+            foreach ($ports as $p) {
+                $pubPort = $p['PublicPort'] ?? 0;
+                $privPort = $p['PrivatePort'] ?? 0;
+                // PublicPort verwenden wenn vorhanden, sonst PrivatePort bei Host-Network
+                // Use PublicPort if available, otherwise PrivatePort for host network
+                $usePort = $pubPort ?: ($isHostNetwork ? $privPort : 0);
+                if ($usePort) {
+                    $proto = ($usePort == 443 || $privPort == 443) ? 'https' : 'http';
+                    $url = "$proto://$host:$usePort/";
+                    break;
+                }
             }
         }
-        // Override URL from label
+        // Override URL from label (höchste Priorität / highest priority)
         if (!empty($labels['webdash.url'])) {
             $url = str_replace('{HOST_IP}', $dockerHostIp, $labels['webdash.url']);
         }
@@ -2474,11 +2489,13 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
   <div class="user-projects">
     <?php foreach ($projects as $i => $proj):
       $isOnline = $proj['status'] === 'online';
+      $hasUrl = !empty($proj['url']);
+      $clickable = $isOnline && $hasUrl;
     ?>
-    <a href="<?= $isOnline ? htmlspecialchars($proj['url']) : '#' ?>"
-       class="uproj<?= $isOnline ? '' : ' disabled' ?>"
+    <a href="<?= $clickable ? htmlspecialchars($proj['url']) : '#' ?>"
+       class="uproj<?= $clickable ? '' : ' disabled' ?>"
        style="animation-delay:<?= 0.15 + $i * 0.08 ?>s"
-       <?= $isOnline ? 'target="_blank" rel="noopener"' : '' ?>>
+       <?= $clickable ? 'target="_blank" rel="noopener"' : '' ?>>
       <div class="uproj-inner">
         <div class="uproj-top">
           <?php $uHasLogo = !empty($proj['logo_dark_ext']) || !empty($proj['logo_light_ext']); $uHlIcon = $proj['homelab_icon'] ?? ''; ?>
@@ -2975,9 +2992,11 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
   <div class="projects">
     <?php foreach ($projects as $i => $proj):
       $projOnline = $proj['status'] !== 'maintenance';
+      $projHasUrl = !empty($proj['url']);
+      $projClickable = $projOnline && $projHasUrl;
     ?>
     <div class="proj" style="animation-delay:<?= 0.1 + $i * 0.08 ?>s">
-      <a href="<?= $projOnline ? htmlspecialchars($proj['url']) : '#' ?>" class="proj-link<?= $projOnline ? '' : ' proj-maintenance' ?>" <?= $projOnline ? 'target="_blank" rel="noopener"' : '' ?>>
+      <a href="<?= $projClickable ? htmlspecialchars($proj['url']) : '#' ?>" class="proj-link<?= $projClickable ? '' : ' proj-maintenance' ?>" <?= $projClickable ? 'target="_blank" rel="noopener"' : '' ?>>
         <div class="proj-head">
           <?php $hasLogo = !empty($proj['logo_dark_ext']) || !empty($proj['logo_light_ext']); $aHlIcon = $proj['homelab_icon'] ?? ''; ?>
           <div class="proj-icon<?= $hasLogo ? ' has-logo' : ($aHlIcon && isset(HOMELAB_SVG_ICONS[$aHlIcon]) ? ' has-homelab' : '') ?>"><?php if ($hasLogo): ?><img src="<?= DASH_BASE ?>?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=dark" alt="" class="proj-logo-dark"><img src="<?= DASH_BASE ?>?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=light" alt="" class="proj-logo-light"><?php elseif ($aHlIcon && isset(HOMELAB_SVG_ICONS[$aHlIcon])): ?><span class="homelab-icon"><?= homelabIconSvg($aHlIcon) ?></span><?php else: ?><?= !empty($proj['icon']) ? $proj['icon'] : (!empty($proj['docker']) ? "\xf0\x9f\x90\xb3" : match($proj['type']) { 'Node.js'=>"\xe2\xac\xa2",'Python'=>"\xf0\x9f\x90\x8d",'Link'=>"\xf0\x9f\x94\x97",default=>"\xe2\x9a\x99" }) ?><?php endif; ?></div>
