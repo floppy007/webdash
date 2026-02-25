@@ -12,12 +12,18 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.70');
+define('WEBDASH_VERSION', '1.71');
+
+// --- Basispfad / Base path ---
+// Erkennt automatisch, ob webdash in einem Unterverzeichnis läuft
+// Automatically detects if webdash runs in a subdirectory
+$_dashBase = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/');
+define('DASH_BASE', $_dashBase === '' ? '/' : $_dashBase . '/');
 
 // --- Sprache / Language ---
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['de', 'en'], true)) {
-    setcookie('webdash_lang', $_GET['lang'], time() + 31536000, '/');
-    header('Location: /');
+    setcookie('webdash_lang', $_GET['lang'], time() + 31536000, DASH_BASE);
+    header('Location: ' . DASH_BASE);
     exit;
 }
 $lang = 'de';
@@ -65,6 +71,7 @@ $t = $lang === 'de' ? [
     'manual_link_add'=>'Link hinzuf&uuml;gen','manual_link_delete_confirm'=>'Link wirklich l&ouml;schen?',
     'manual_link_added'=>'Link hinzugefügt','manual_link_deleted'=>'Link gelöscht',
     'project_edit'=>'Projekt bearbeiten','project_edit_desc'=>'Beschreibung','project_edit_icon'=>'Icon',
+    'url_mode'=>'URL-Modus','url_mode_auto'=>'Automatisch','url_mode_ip_port'=>'IP + Port','url_mode_dns'=>'DNS-Name','url_mode_custom'=>'Eigene URL',
     'docker_mode'=>'Docker-Modus','docker_containers'=>'Container','docker_no_socket'=>'Docker-Socket nicht verf&uuml;gbar',
     'docker_no_containers'=>'Keine Container gefunden','docker_container_id'=>'Container-ID',
     'visible_containers'=>'Sichtbare Container','visible_containers_hint'=>'Container im Dashboard ein-/ausblenden',
@@ -127,6 +134,7 @@ $t = $lang === 'de' ? [
     'manual_link_add'=>'Add link','manual_link_delete_confirm'=>'Really delete this link?',
     'manual_link_added'=>'Link added','manual_link_deleted'=>'Link deleted',
     'project_edit'=>'Edit project','project_edit_desc'=>'Description','project_edit_icon'=>'Icon',
+    'url_mode'=>'URL Mode','url_mode_auto'=>'Automatic','url_mode_ip_port'=>'IP + Port','url_mode_dns'=>'DNS Name','url_mode_custom'=>'Custom URL',
     'docker_mode'=>'Docker Mode','docker_containers'=>'Containers','docker_no_socket'=>'Docker socket not available',
     'docker_no_containers'=>'No containers found','docker_container_id'=>'Container ID',
     'visible_containers'=>'Visible Containers','visible_containers_hint'=>'Show/hide containers on the dashboard',
@@ -586,7 +594,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['setup_username'], $_P
         saveDashConfig($cfg);
         $_SESSION['dashboard_user'] = ['id'=>0,'username'=>$setupUser,'name'=>ucfirst($setupUser),'role'=>'admin'];
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -617,7 +625,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
     if (!$authenticated) {
         $_SESSION['dashboard_login_error'] = $t['err_creds'];
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -641,7 +649,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SESSION['dashboard_user'])
             }
         }
     }
-    if ($uploaded) { header('Location: /'); exit; }
+    if ($uploaded) { header('Location: ' . DASH_BASE); exit; }
 }
 
 
@@ -656,19 +664,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_admin_profile'])
         if (strlen($pw) < 4) {
             $_SESSION['dashboard_pw_msg'] = ['fail', $t['pw_short']];
             saveDashConfig($cfg);
-            header('Location: /');
+            header('Location: ' . DASH_BASE);
             exit;
         } elseif ($pw !== $pw2) {
             $_SESSION['dashboard_pw_msg'] = ['fail', $t['pw_mismatch']];
             saveDashConfig($cfg);
-            header('Location: /');
+            header('Location: ' . DASH_BASE);
             exit;
         }
         $cfg['admin_pass'] = password_hash($pw, PASSWORD_DEFAULT);
     }
     saveDashConfig($cfg);
     $_SESSION['dashboard_pw_msg'] = ['ok', $lang === 'de' ? 'Gespeichert' : 'Saved'];
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -684,7 +692,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cfg_smtp_host']) && !
     $cfg['smtp_from_name']  = trim($_POST['cfg_smtp_from_name'] ?? '');
     saveDashConfig($cfg);
     $_SESSION['dashboard_smtp_msg'] = ['ok', $t['smtp_save']];
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -698,7 +706,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['smtp_test_send']) && 
     } else {
         $_SESSION['dashboard_smtp_msg'] = ['fail', $t['smtp_test_fail']];
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -722,7 +730,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user_username'], 
         saveDashConfig($cfg);
         $_SESSION['dashboard_user_msg'] = ['ok', $t['users_added']];
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -742,7 +750,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user_idx']) && !
         saveDashConfig($cfg);
         $_SESSION['dashboard_user_msg'] = ['ok', $t['users_save']];
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -756,7 +764,7 @@ if (isset($_GET['delete_user']) && !empty($_SESSION['dashboard_user'])) {
         $cfg['users'] = $users;
         saveDashConfig($cfg);
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -768,7 +776,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['scan_dir']) && !isset
         $cfg['scan_dir'] = $dir;
         saveDashConfig($cfg);
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -777,7 +785,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_include_dirs']) 
     $cfg = dashConfig();
     $cfg['include_dirs'] = isset($_POST['include_dirs']) && is_array($_POST['include_dirs']) ? array_values($_POST['include_dirs']) : [];
     saveDashConfig($cfg);
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -786,7 +794,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_google_search'])
     $cfg = dashConfig();
     $cfg['google_search'] = !empty($_POST['google_search_enabled']);
     saveDashConfig($cfg);
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -796,7 +804,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_bg_mode']) && !e
     $mode = $_POST['bg_mode'] ?? '';
     $cfg['bg_mode'] = in_array($mode, ['preset', 'custom', ''], true) ? $mode : '';
     saveDashConfig($cfg);
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -806,7 +814,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_bg_effects']) &&
     $cfg['bg_blur'] = max(0, min(100, (int)($_POST['bg_blur'] ?? 0)));
     $cfg['bg_brightness'] = max(0, min(100, (int)($_POST['bg_brightness'] ?? 28)));
     saveDashConfig($cfg);
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -817,7 +825,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_dashboard_sectio
     $cfg['show_resources'] = !empty($_POST['show_resources']);
     $cfg['show_services'] = !empty($_POST['show_services']);
     saveDashConfig($cfg);
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -826,7 +834,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_include_containe
     $cfg = dashConfig();
     $cfg['include_containers'] = isset($_POST['include_containers']) && is_array($_POST['include_containers']) ? array_values($_POST['include_containers']) : [];
     saveDashConfig($cfg);
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -864,6 +872,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_project_desc']) 
         } else {
             unset($cfg['project_titles'][$projName]);
         }
+        // URL-Modus / URL mode
+        $urlMode = trim($_POST['project_url_mode'] ?? 'auto');
+        if (!isset($cfg['project_url_mode'])) $cfg['project_url_mode'] = [];
+        if ($urlMode !== '' && $urlMode !== 'auto') {
+            $cfg['project_url_mode'][$projName] = $urlMode;
+        } else {
+            unset($cfg['project_url_mode'][$projName]);
+        }
+        // Custom URL speichern / Save custom URL
+        if ($urlMode === 'custom') {
+            $customUrl = trim($_POST['project_custom_url'] ?? '');
+            if (!isset($cfg['project_custom_url'])) $cfg['project_custom_url'] = [];
+            if ($customUrl !== '') {
+                $cfg['project_custom_url'][$projName] = $customUrl;
+            } else {
+                unset($cfg['project_custom_url'][$projName]);
+            }
+        }
         // Wartungsmodus / Maintenance mode
         if (!isset($cfg['project_maintenance'])) $cfg['project_maintenance'] = [];
         if (!empty($_POST['project_maintenance'])) {
@@ -899,7 +925,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_project_desc']) 
         }
         saveDashConfig($cfg);
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -915,7 +941,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_manual_link']) &&
         saveDashConfig($cfg);
         $_SESSION['dashboard_manual_msg'] = ['ok', $t['manual_link_added']];
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -928,7 +954,7 @@ if (isset($_GET['delete_manual_link']) && !empty($_SESSION['dashboard_user'])) {
         saveDashConfig($cfg);
         $_SESSION['dashboard_manual_msg'] = ['ok', $t['manual_link_deleted']];
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -948,7 +974,7 @@ if (isset($_GET['remove_project_logo']) && !empty($_SESSION['dashboard_user'])) 
         header('Content-Type: application/json');
         echo json_encode(['ok' => true]);
     } else {
-        header('Location: /');
+        header('Location: ' . DASH_BASE);
     }
     exit;
 }
@@ -971,14 +997,14 @@ if (isset($_GET['remove_logo']) && !empty($_SESSION['dashboard_user'])) {
             saveDashConfig($cfg);
         }
     }
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
 // --- Abmelden ---
 if (isset($_GET['logout'])) {
     unset($_SESSION['dashboard_user']);
-    header('Location: /');
+    header('Location: ' . DASH_BASE);
     exit;
 }
 
@@ -1153,7 +1179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['forgot_identifier']))
         // Reset-Link / Reset link
         $proto = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')) ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $resetUrl = $proto . '://' . $host . '/?action=reset_password&token=' . $token;
+        $resetUrl = $proto . '://' . $host . DASH_BASE . '?action=reset_password&token=' . $token;
         $bodyHtml = '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">'
             . '<h2 style="color:#00d4cc">webdash</h2>'
             . '<p>' . ($lang === 'de' ? 'Du hast eine Passwort-Zurücksetzung angefordert.' : 'You requested a password reset.') . '</p>'
@@ -1164,7 +1190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['forgot_identifier']))
         dashboardSendMail($foundEmail, 'webdash — ' . strip_tags($t['reset_pw']), $bodyHtml);
     }
     $_SESSION['dashboard_forgot_sent'] = true;
-    header('Location: /?action=forgot_password');
+    header('Location: ' . DASH_BASE . '?action=forgot_password');
     exit;
 }
 
@@ -1214,12 +1240,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_token'], $_POST
             $cfg['reset_tokens'] = $tokens;
             saveDashConfig($cfg);
             $_SESSION['dashboard_reset_success'] = true;
-            header('Location: /');
+            header('Location: ' . DASH_BASE);
             exit;
         }
     }
     $_SESSION['dashboard_reset_error'] = $error;
-    header('Location: /?action=reset_password&token=' . urlencode($token));
+    header('Location: ' . DASH_BASE . '?action=reset_password&token=' . urlencode($token));
     exit;
 }
 
@@ -1267,7 +1293,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <div class="success-msg"><?= $t['forgot_pw_sent'] ?></div>
   <?php else: ?>
     <p style="font-size:.82rem;color:var(--text-muted);text-align:center;margin-bottom:1.25rem"><?= $t['forgot_pw_desc'] ?></p>
-    <form method="POST" action="/?action=forgot_password">
+    <form method="POST" action="<?= DASH_BASE ?>?action=forgot_password">
       <div class="field">
         <input type="email" name="forgot_identifier" required placeholder="<?= $t['email'] ?>" autofocus>
       </div>
@@ -1335,7 +1361,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <a href="/" class="back-link">&larr; <?= $t['login'] ?></a>
   <?php else: ?>
     <?php if ($resetError): ?><div class="error-msg"><?= htmlspecialchars($resetError) ?></div><?php endif; ?>
-    <form method="POST" action="/?action=reset_password">
+    <form method="POST" action="<?= DASH_BASE ?>?action=reset_password">
       <input type="hidden" name="reset_token" value="<?= htmlspecialchars($token) ?>">
       <div class="field">
         <label><?= $t['new_password'] ?></label>
@@ -1580,6 +1606,23 @@ function applyProjectOverrides(array &$project, string $name, array $cfg): void 
     if (!empty($cfg['project_logo_dark_ext'][$name])) $project['logo_dark_ext'] = $cfg['project_logo_dark_ext'][$name];
     if (!empty($cfg['project_logo_light_ext'][$name])) $project['logo_light_ext'] = $cfg['project_logo_light_ext'][$name];
     if (!empty($cfg['project_maintenance'][$name])) $project['status'] = 'maintenance';
+    // URL-Modus anwenden / Apply URL mode
+    $urlMode = $cfg['project_url_mode'][$name] ?? 'auto';
+    if ($urlMode !== 'auto') {
+        $project['url_mode'] = $urlMode;
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $hostOnly = explode(':', $host)[0];
+        $proto = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')) ? 'https' : 'http';
+        if ($urlMode === 'ip_port') {
+            $serverIp = $_SERVER['SERVER_ADDR'] ?? $hostOnly;
+            $port = $_SERVER['SERVER_PORT'] ?? '80';
+            $project['url'] = "$proto://$serverIp:$port/" . $name . '/';
+        } elseif ($urlMode === 'dns') {
+            $project['url'] = "$proto://$hostOnly/" . $name . '/';
+        } elseif ($urlMode === 'custom' && !empty($cfg['project_custom_url'][$name])) {
+            $project['url'] = $cfg['project_custom_url'][$name];
+        }
+    }
 }
 // Verzeichnis scannen und Projekte erstellen / Scan directory and build projects
 function scanDirForProjects(string $scanDir, array $dashCfg, array $includeDirs, bool $hasIncludeConf, ?string $docRoot = null): array {
@@ -1729,11 +1772,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 </head>
 <body>
 <div class="card">
-  <a href="/?lang=<?= $lang === 'de' ? 'en' : 'de' ?>" class="lang-toggle"><?= $lang === 'de' ? flagDE(16) . ' DE' : flagUS(16) . ' EN' ?></a>
+  <a href="<?= DASH_BASE ?>?lang=<?= $lang === 'de' ? 'en' : 'de' ?>" class="lang-toggle"><?= $lang === 'de' ? flagDE(16) . ' DE' : flagUS(16) . ' EN' ?></a>
   <div class="logo">
     <?php if ($_setupLogoDark || $_setupLogoLight): ?>
-      <?php if ($_setupLogoDark): ?><img src="/?asset=logo-dark&v=<?= filemtime(DASH_LOGO_DARK . '.' . $_dashCfgCheck['logo_dark_ext']) ?>" alt="Logo" class="setup-logo setup-logo-dark"><?php endif; ?>
-      <?php if ($_setupLogoLight): ?><img src="/?asset=logo-light&v=<?= filemtime(DASH_LOGO_LIGHT . '.' . $_dashCfgCheck['logo_light_ext']) ?>" alt="Logo" class="setup-logo setup-logo-light"><?php endif; ?>
+      <?php if ($_setupLogoDark): ?><img src="<?= DASH_BASE ?>?asset=logo-dark&v=<?= filemtime(DASH_LOGO_DARK . '.' . $_dashCfgCheck['logo_dark_ext']) ?>" alt="Logo" class="setup-logo setup-logo-dark"><?php endif; ?>
+      <?php if ($_setupLogoLight): ?><img src="<?= DASH_BASE ?>?asset=logo-light&v=<?= filemtime(DASH_LOGO_LIGHT . '.' . $_dashCfgCheck['logo_light_ext']) ?>" alt="Logo" class="setup-logo setup-logo-light"><?php endif; ?>
     <?php else: ?>
       <h1>webdash</h1>
     <?php endif; ?>
@@ -1741,7 +1784,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   </div>
   <p style="font-size:.85rem;color:var(--text-muted);text-align:center;margin-bottom:1rem"><?= $t['setup_desc'] ?></p>
   <?php if ($setupError): ?><div class="error-msg"><?= htmlspecialchars($setupError) ?></div><?php endif; ?>
-  <form method="POST" action="/">
+  <form method="POST" action="<?= DASH_BASE ?>">
     <div class="field">
       <label><?= $t['username'] ?></label>
       <input type="text" name="setup_username" value="<?= htmlspecialchars($setupInput['username'] ?? '') ?>" required placeholder="admin" autocomplete="username" autofocus>
@@ -1784,11 +1827,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 $favDark  = DASH_DIR . '/favicon-dark.png';
 $favLight = DASH_DIR . '/favicon-light.png';
 if (file_exists($favDark) && file_exists($favLight)): ?>
-<link rel="icon" type="image/png" href="/?asset=favicon-dark&v=<?= filemtime($favDark) ?>" media="(prefers-color-scheme: dark)">
-<link rel="icon" type="image/png" href="/?asset=favicon-light&v=<?= filemtime($favLight) ?>" media="(prefers-color-scheme: light)">
-<link rel="icon" type="image/png" href="/?asset=favicon-light&v=<?= filemtime($favLight) ?>">
+<link rel="icon" type="image/png" href="<?= DASH_BASE ?>?asset=favicon-dark&v=<?= filemtime($favDark) ?>" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="<?= DASH_BASE ?>?asset=favicon-light&v=<?= filemtime($favLight) ?>" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" href="<?= DASH_BASE ?>?asset=favicon-light&v=<?= filemtime($favLight) ?>">
 <?php elseif ($hasLogoDark): ?>
-<link rel="icon" type="image/<?= $dashCfg['logo_dark_ext'] ?>" href="/?asset=logo-dark&v=<?= filemtime(DASH_LOGO_DARK . '.' . $dashCfg['logo_dark_ext']) ?>">
+<link rel="icon" type="image/<?= $dashCfg['logo_dark_ext'] ?>" href="<?= DASH_BASE ?>?asset=logo-dark&v=<?= filemtime(DASH_LOGO_DARK . '.' . $dashCfg['logo_dark_ext']) ?>">
 <?php endif; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1842,9 +1885,9 @@ body.has-bg{
   background:center/cover no-repeat fixed !important;
   background-size:cover !important;
 }
-body.has-bg.bg-custom{background-image:url('/?asset=bg-image') !important}
-body.has-bg.bg-preset{background-image:url('/?asset=wallpaper&theme=dark') !important}
-.light body.has-bg.bg-preset,body.has-bg.bg-preset.light{background-image:url('/?asset=wallpaper&theme=light') !important}
+body.has-bg.bg-custom{background-image:url('<?= DASH_BASE ?>?asset=bg-image') !important}
+body.has-bg.bg-preset{background-image:url('<?= DASH_BASE ?>?asset=wallpaper&theme=dark') !important}
+.light body.has-bg.bg-preset,body.has-bg.bg-preset.light{background-image:url('<?= DASH_BASE ?>?asset=wallpaper&theme=light') !important}
 body.has-bg::after{
   content:'';position:fixed;inset:0;z-index:0;
   backdrop-filter:blur(var(--bg-blur,0px)) brightness(var(--bg-brightness,.55));
@@ -2333,19 +2376,19 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
     <div class="hdr-left">
       <div class="hdr-logos">
         <?php if ($hasAppLogoDark): ?>
-          <img src="/?asset=app-logo-dark&v=<?= filemtime(DASH_APP_LOGO_DARK) ?>" alt="webdash" class="hdr-logo hdr-logo-dark">
+          <img src="<?= DASH_BASE ?>?asset=app-logo-dark&v=<?= filemtime(DASH_APP_LOGO_DARK) ?>" alt="webdash" class="hdr-logo hdr-logo-dark">
         <?php endif; ?>
         <?php if ($hasAppLogoLight): ?>
-          <img src="/?asset=app-logo-light&v=<?= filemtime(DASH_APP_LOGO_LIGHT) ?>" alt="webdash" class="hdr-logo hdr-logo-light">
+          <img src="<?= DASH_BASE ?>?asset=app-logo-light&v=<?= filemtime(DASH_APP_LOGO_LIGHT) ?>" alt="webdash" class="hdr-logo hdr-logo-light">
         <?php endif; ?>
         <?php if ($hasAppLogoDark || $hasAppLogoLight): ?>
           <span class="hdr-logo-sep"></span>
         <?php endif; ?>
         <?php if ($hasLogoDark): ?>
-          <img src="/?asset=logo-dark&v=<?= filemtime(DASH_LOGO_DARK . '.' . $dashCfg['logo_dark_ext']) ?>" alt="Logo" class="hdr-logo hdr-custom hdr-logo-dark">
+          <img src="<?= DASH_BASE ?>?asset=logo-dark&v=<?= filemtime(DASH_LOGO_DARK . '.' . $dashCfg['logo_dark_ext']) ?>" alt="Logo" class="hdr-logo hdr-custom hdr-logo-dark">
         <?php endif; ?>
         <?php if ($hasLogoLight): ?>
-          <img src="/?asset=logo-light&v=<?= filemtime(DASH_LOGO_LIGHT . '.' . $dashCfg['logo_light_ext']) ?>" alt="Logo" class="hdr-logo hdr-custom hdr-logo-light">
+          <img src="<?= DASH_BASE ?>?asset=logo-light&v=<?= filemtime(DASH_LOGO_LIGHT . '.' . $dashCfg['logo_light_ext']) ?>" alt="Logo" class="hdr-logo hdr-custom hdr-logo-light">
         <?php endif; ?>
       </div>
       <?php if ($hasAnyLogo): ?>
@@ -2358,7 +2401,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
     </div>
     <div class="hdr-right">
       <span class="hdr-clock" id="clock"></span>
-      <a href="/?lang=<?= $lang === 'de' ? 'en' : 'de' ?>" class="btn-icon" title="<?= $t['toggle_lang'] ?>" style="line-height:1">
+      <a href="<?= DASH_BASE ?>?lang=<?= $lang === 'de' ? 'en' : 'de' ?>" class="btn-icon" title="<?= $t['toggle_lang'] ?>" style="line-height:1">
         <?= $lang === 'de' ? flagDE(22) : flagUS(22) ?>
       </a>
       <button class="btn-icon" onclick="toggleDashboardTheme()" title="<?= $t['toggle_theme'] ?>">
@@ -2369,7 +2412,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       </a>
       <?php if ($isAdmin): ?>
-        <a href="/?logout" class="btn-link danger" title="<?= $t['logout'] ?>">
+        <a href="<?= DASH_BASE ?>?logout" class="btn-link danger" title="<?= $t['logout'] ?>">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           <?= $t['logout'] ?>
         </a>
@@ -2439,7 +2482,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
       <div class="uproj-inner">
         <div class="uproj-top">
           <?php $uHasLogo = !empty($proj['logo_dark_ext']) || !empty($proj['logo_light_ext']); $uHlIcon = $proj['homelab_icon'] ?? ''; ?>
-          <div class="uproj-icon<?= $uHasLogo ? ' has-logo' : ($uHlIcon && isset(HOMELAB_SVG_ICONS[$uHlIcon]) ? ' has-homelab' : '') ?>"><?php if ($uHasLogo): ?><img src="/?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=dark" alt="" class="proj-logo-dark"><img src="/?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=light" alt="" class="proj-logo-light"><?php elseif ($uHlIcon && isset(HOMELAB_SVG_ICONS[$uHlIcon])): ?><span class="homelab-icon"><?= homelabIconSvg($uHlIcon) ?></span><?php else: ?><?= !empty($proj['icon']) ? $proj['icon'] : (!empty($proj['docker']) ? "\xf0\x9f\x90\xb3" : match($proj['type']) { 'Node.js'=>"\xe2\xac\xa2",'Python'=>"\xf0\x9f\x90\x8d",'Link'=>"\xf0\x9f\x94\x97",default=>"\xe2\x9a\x99" }) ?><?php endif; ?></div>
+          <div class="uproj-icon<?= $uHasLogo ? ' has-logo' : ($uHlIcon && isset(HOMELAB_SVG_ICONS[$uHlIcon]) ? ' has-homelab' : '') ?>"><?php if ($uHasLogo): ?><img src="<?= DASH_BASE ?>?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=dark" alt="" class="proj-logo-dark"><img src="<?= DASH_BASE ?>?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=light" alt="" class="proj-logo-light"><?php elseif ($uHlIcon && isset(HOMELAB_SVG_ICONS[$uHlIcon])): ?><span class="homelab-icon"><?= homelabIconSvg($uHlIcon) ?></span><?php else: ?><?= !empty($proj['icon']) ? $proj['icon'] : (!empty($proj['docker']) ? "\xf0\x9f\x90\xb3" : match($proj['type']) { 'Node.js'=>"\xe2\xac\xa2",'Python'=>"\xf0\x9f\x90\x8d",'Link'=>"\xf0\x9f\x94\x97",default=>"\xe2\x9a\x99" }) ?><?php endif; ?></div>
           <div class="uproj-info">
             <div class="uproj-name"><?= htmlspecialchars(!empty($proj['display_name']) ? $proj['display_name'] : $proj['name']) ?></div>
             <div class="uproj-type"><?= htmlspecialchars(!empty($proj['docker']) ? (strlen($proj['type']) > 30 ? substr($proj['type'], 0, 30) . '...' : $proj['type']) : $proj['type']) ?></div>
@@ -2492,11 +2535,11 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
     <!-- Darstellung / Appearance: Logos -->
     <div class="settings-group-label"><?= $lang === 'de' ? 'Darstellung' : 'Appearance' ?></div>
     <div class="settings-row">
-      <form method="POST" action="/" enctype="multipart/form-data" id="logoDarkForm" class="settings-item">
+      <form method="POST" action="<?= DASH_BASE ?>" enctype="multipart/form-data" id="logoDarkForm" class="settings-item">
         <label class="settings-label"><?= $t['logo_dark'] ?></label>
         <div class="settings-logo-actions">
           <?php if ($hasLogoDark): ?>
-            <img src="/?asset=logo-dark&v=<?= filemtime(DASH_LOGO_DARK . '.' . $dashCfg['logo_dark_ext']) ?>" alt="Logo" class="settings-logo-preview">
+            <img src="<?= DASH_BASE ?>?asset=logo-dark&v=<?= filemtime(DASH_LOGO_DARK . '.' . $dashCfg['logo_dark_ext']) ?>" alt="Logo" class="settings-logo-preview">
           <?php endif; ?>
           <label class="btn-link" style="cursor:pointer">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -2504,15 +2547,15 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
             <input type="file" name="logo_dark" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" onchange="this.form.submit()" style="display:none">
           </label>
           <?php if ($hasLogoDark): ?>
-            <a href="/?remove_logo=dark" class="btn-link danger"><?= $t['remove'] ?></a>
+            <a href="<?= DASH_BASE ?>?remove_logo=dark" class="btn-link danger"><?= $t['remove'] ?></a>
           <?php endif; ?>
         </div>
       </form>
-      <form method="POST" action="/" enctype="multipart/form-data" id="logoLightForm" class="settings-item">
+      <form method="POST" action="<?= DASH_BASE ?>" enctype="multipart/form-data" id="logoLightForm" class="settings-item">
         <label class="settings-label"><?= $t['logo_light'] ?></label>
         <div class="settings-logo-actions">
           <?php if ($hasLogoLight): ?>
-            <img src="/?asset=logo-light&v=<?= filemtime(DASH_LOGO_LIGHT . '.' . $dashCfg['logo_light_ext']) ?>" alt="Logo" class="settings-logo-preview">
+            <img src="<?= DASH_BASE ?>?asset=logo-light&v=<?= filemtime(DASH_LOGO_LIGHT . '.' . $dashCfg['logo_light_ext']) ?>" alt="Logo" class="settings-logo-preview">
           <?php endif; ?>
           <label class="btn-link" style="cursor:pointer">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -2520,7 +2563,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
             <input type="file" name="logo_light" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" onchange="this.form.submit()" style="display:none">
           </label>
           <?php if ($hasLogoLight): ?>
-            <a href="/?remove_logo=light" class="btn-link danger"><?= $t['remove'] ?></a>
+            <a href="<?= DASH_BASE ?>?remove_logo=light" class="btn-link danger"><?= $t['remove'] ?></a>
           <?php endif; ?>
         </div>
       </form>
@@ -2535,21 +2578,21 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
       <div class="settings-item">
         <label class="settings-label"><?= $t['bg_image'] ?></label>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-          <form method="POST" action="/" style="display:inline">
+          <form method="POST" action="<?= DASH_BASE ?>" style="display:inline">
             <input type="hidden" name="save_bg_mode" value="1">
             <input type="hidden" name="bg_mode" value="<?= $hasBgPreset ? '' : 'preset' ?>">
             <button type="submit" style="cursor:pointer;border:2px solid <?= $hasBgPreset ? 'var(--accent)' : 'var(--border)' ?>;border-radius:8px;padding:2px;background:none;position:relative;transition:border-color .25s" title="<?= $lang === 'de' ? 'Standardbilder' : 'Default wallpapers' ?>">
               <div style="display:flex;gap:2px">
-                <img src="/?asset=wallpaper&theme=dark" alt="Dark" style="height:36px;width:52px;object-fit:cover;border-radius:5px 0 0 5px">
-                <img src="/?asset=wallpaper&theme=light" alt="Light" style="height:36px;width:52px;object-fit:cover;border-radius:0 5px 5px 0">
+                <img src="<?= DASH_BASE ?>?asset=wallpaper&theme=dark" alt="Dark" style="height:36px;width:52px;object-fit:cover;border-radius:5px 0 0 5px">
+                <img src="<?= DASH_BASE ?>?asset=wallpaper&theme=light" alt="Light" style="height:36px;width:52px;object-fit:cover;border-radius:0 5px 5px 0">
               </div>
               <?php if ($hasBgPreset): ?><span style="position:absolute;top:-6px;right:-6px;width:14px;height:14px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></span><?php endif; ?>
             </button>
           </form>
-          <form method="POST" action="/" enctype="multipart/form-data" id="bgImageForm" style="display:inline">
+          <form method="POST" action="<?= DASH_BASE ?>" enctype="multipart/form-data" id="bgImageForm" style="display:inline">
             <?php if ($hasBgCustom): ?>
               <div style="display:inline-flex;border:2px solid var(--accent);border-radius:8px;padding:2px;position:relative">
-                <img src="/?asset=bg-image&v=<?= filemtime(DASH_BG_IMAGE . '.' . $dashCfg['bg_image_ext']) ?>" alt="BG" style="height:36px;width:52px;object-fit:cover;border-radius:6px">
+                <img src="<?= DASH_BASE ?>?asset=bg-image&v=<?= filemtime(DASH_BG_IMAGE . '.' . $dashCfg['bg_image_ext']) ?>" alt="BG" style="height:36px;width:52px;object-fit:cover;border-radius:6px">
                 <span style="position:absolute;top:-6px;right:-6px;width:14px;height:14px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></span>
               </div>
             <?php endif; ?>
@@ -2560,7 +2603,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
             </label>
           </form>
           <?php if ($hasBgAny): ?>
-            <form method="POST" action="/" style="display:inline">
+            <form method="POST" action="<?= DASH_BASE ?>" style="display:inline">
               <input type="hidden" name="save_bg_mode" value="1">
               <input type="hidden" name="bg_mode" value="">
               <button type="submit" class="btn-link danger" style="border:none;background:none;cursor:pointer;font-family:var(--font)"><?= $t['remove'] ?></button>
@@ -2576,7 +2619,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
         <?php endif; ?>
       </div>
       <?php if ($hasBgAny): ?>
-      <form method="POST" action="/" class="settings-item" id="bgBlurForm">
+      <form method="POST" action="<?= DASH_BASE ?>" class="settings-item" id="bgBlurForm">
         <input type="hidden" name="save_bg_effects" value="1">
         <input type="hidden" name="bg_brightness" value="<?= $sBgBright ?>">
         <label class="settings-label"><?= $t['bg_blur'] ?></label>
@@ -2585,7 +2628,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
           <span style="font-size:.75rem;color:var(--text-muted);min-width:30px"><?= $sBgBlur ?>%</span>
         </div>
       </form>
-      <form method="POST" action="/" class="settings-item" id="bgBrightForm">
+      <form method="POST" action="<?= DASH_BASE ?>" class="settings-item" id="bgBrightForm">
         <input type="hidden" name="save_bg_effects" value="1">
         <input type="hidden" name="bg_blur" value="<?= $sBgBlur ?>">
         <label class="settings-label"><?= $t['bg_brightness'] ?></label>
@@ -2600,7 +2643,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
     <!-- Funktionen / Features -->
     <div class="settings-group-label"><?= $lang === 'de' ? 'Funktionen' : 'Features' ?></div>
     <div class="settings-row">
-      <form method="POST" action="/" class="settings-item">
+      <form method="POST" action="<?= DASH_BASE ?>" class="settings-item">
         <label class="settings-label"><?= $t['google_search'] ?></label>
         <input type="hidden" name="save_google_search" value="1">
         <label class="dir-toggle" style="margin:0">
@@ -2609,7 +2652,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
           <span class="dir-toggle-switch"></span>
         </label>
       </form>
-      <form method="POST" action="/" class="settings-item">
+      <form method="POST" action="<?= DASH_BASE ?>" class="settings-item">
         <label class="settings-label"><?= $t['show_stats'] ?></label>
         <input type="hidden" name="save_dashboard_sections" value="1">
         <input type="hidden" name="show_resources" value="<?= $showResources ? '1' : '' ?>">
@@ -2620,7 +2663,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
           <span class="dir-toggle-switch"></span>
         </label>
       </form>
-      <form method="POST" action="/" class="settings-item">
+      <form method="POST" action="<?= DASH_BASE ?>" class="settings-item">
         <label class="settings-label"><?= $t['show_resources'] ?></label>
         <input type="hidden" name="save_dashboard_sections" value="1">
         <input type="hidden" name="show_stats" value="<?= $showStats ? '1' : '' ?>">
@@ -2631,7 +2674,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
           <span class="dir-toggle-switch"></span>
         </label>
       </form>
-      <form method="POST" action="/" class="settings-item">
+      <form method="POST" action="<?= DASH_BASE ?>" class="settings-item">
         <label class="settings-label"><?= $t['show_services'] ?></label>
         <input type="hidden" name="save_dashboard_sections" value="1">
         <input type="hidden" name="show_stats" value="<?= $showStats ? '1' : '' ?>">
@@ -2647,6 +2690,15 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
     <!-- System -->
     <div class="settings-group-label">System</div>
     <div class="settings-row">
+      <?php if (!$dockerMode): ?>
+      <form method="POST" action="<?= DASH_BASE ?>" class="settings-item" style="flex-basis:100%">
+        <label class="settings-label"><?= $t['scan_dir'] ?></label>
+        <div style="display:flex;gap:.5rem;align-items:center;width:100%">
+          <input type="text" name="scan_dir" value="<?= htmlspecialchars($scanDir) ?>" class="modal-input modal-input-text" style="flex:1;font-size:.78rem" placeholder="<?= htmlspecialchars(dirname(__DIR__)) ?>">
+          <button type="submit" class="btn-update" style="white-space:nowrap"><?= $t['save'] ?></button>
+        </div>
+      </form>
+      <?php endif; ?>
       <?php if ($dockerMode): ?>
       <div class="settings-item">
         <label class="settings-label"><?= $t['docker_mode'] ?></label>
@@ -2703,7 +2755,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
       <div style="margin-top:.5rem;font-size:.78rem;color:<?= $smtpMsg[0] === 'ok' ? 'var(--success)' : 'var(--danger)' ?>"><?= htmlspecialchars($smtpMsg[1]) ?></div>
     <?php endif; ?>
     <div class="settings-row">
-      <form method="POST" action="/" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;width:100%">
+      <form method="POST" action="<?= DASH_BASE ?>" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;width:100%">
         <div class="settings-item">
           <label class="settings-label"><?= $t['smtp_host'] ?></label>
           <input type="text" name="cfg_smtp_host" value="<?= htmlspecialchars($smtpHost) ?>" class="settings-input" style="min-width:160px" placeholder="smtp.example.com">
@@ -2740,7 +2792,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
       </form>
     </div>
     <?php if ($smtpHost): ?>
-    <form method="POST" action="/" style="margin-top:.75rem">
+    <form method="POST" action="<?= DASH_BASE ?>" style="margin-top:.75rem">
       <input type="hidden" name="smtp_test_send" value="1">
       <button type="submit" class="btn-update">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
@@ -2780,7 +2832,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
             <svg class="user-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="user-card-edit" id="ueA">
-            <form method="POST" action="/" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+            <form method="POST" action="<?= DASH_BASE ?>" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
               <input type="hidden" name="save_admin_profile" value="1">
               <div class="settings-item">
                 <label class="settings-label"><?= $t['email'] ?></label>
@@ -2815,7 +2867,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
             <svg class="user-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="user-card-edit" id="ue<?= $idx ?>">
-            <form method="POST" action="/" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+            <form method="POST" action="<?= DASH_BASE ?>" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
               <input type="hidden" name="edit_user_idx" value="<?= $idx ?>">
               <div class="settings-item">
                 <label class="settings-label"><?= $t['users_name'] ?></label>
@@ -2833,14 +2885,14 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                 <?= $t['users_save'] ?>
               </button>
-              <a href="/?delete_user=<?= $idx ?>" class="btn-link danger" style="font-size:.72rem;margin-left:auto" onclick="return confirm('<?= $t['users_delete_confirm'] ?>')"><?= $t['users_delete'] ?></a>
+              <a href="<?= DASH_BASE ?>?delete_user=<?= $idx ?>" class="btn-link danger" style="font-size:.72rem;margin-left:auto" onclick="return confirm('<?= $t['users_delete_confirm'] ?>')"><?= $t['users_delete'] ?></a>
             </form>
           </div>
         </div>
         <?php endforeach; ?>
       </div>
     <div class="section-title" style="margin-top:1rem;margin-bottom:.5rem"><?= $t['users_add'] ?></div>
-    <form method="POST" action="/" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+    <form method="POST" action="<?= DASH_BASE ?>" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
       <div class="settings-item">
         <label class="settings-label"><?= $t['users_name'] ?></label>
         <input type="text" name="add_user_name" class="settings-input" style="min-width:140px" required>
@@ -2875,7 +2927,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
       </div>
       <div style="font-size:.72rem;color:var(--text-dim);font-family:var(--mono)"><?= $hasContainerConf ? count($includeContainers) : count($allContainers) ?>/<?= count($allContainers) ?></div>
     </div>
-    <form method="POST" action="/" id="containerForm">
+    <form method="POST" action="<?= DASH_BASE ?>" id="containerForm">
       <input type="hidden" name="save_include_containers" value="1">
       <div class="dir-grid">
         <?php foreach ($allContainers as $ct): ?>
@@ -2900,7 +2952,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
       </div>
       <div style="font-size:.72rem;color:var(--text-dim);font-family:var(--mono)"><?= $hasIncludeConf ? count($includeDirs) : count($allDirs) ?>/<?= count($allDirs) ?></div>
     </div>
-    <form method="POST" action="/" id="dirForm">
+    <form method="POST" action="<?= DASH_BASE ?>" id="dirForm">
       <input type="hidden" name="save_include_dirs" value="1">
       <div class="dir-grid">
         <?php foreach ($allDirs as $d): ?>
@@ -2928,7 +2980,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
       <a href="<?= $projOnline ? htmlspecialchars($proj['url']) : '#' ?>" class="proj-link<?= $projOnline ? '' : ' proj-maintenance' ?>" <?= $projOnline ? 'target="_blank" rel="noopener"' : '' ?>>
         <div class="proj-head">
           <?php $hasLogo = !empty($proj['logo_dark_ext']) || !empty($proj['logo_light_ext']); $aHlIcon = $proj['homelab_icon'] ?? ''; ?>
-          <div class="proj-icon<?= $hasLogo ? ' has-logo' : ($aHlIcon && isset(HOMELAB_SVG_ICONS[$aHlIcon]) ? ' has-homelab' : '') ?>"><?php if ($hasLogo): ?><img src="/?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=dark" alt="" class="proj-logo-dark"><img src="/?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=light" alt="" class="proj-logo-light"><?php elseif ($aHlIcon && isset(HOMELAB_SVG_ICONS[$aHlIcon])): ?><span class="homelab-icon"><?= homelabIconSvg($aHlIcon) ?></span><?php else: ?><?= !empty($proj['icon']) ? $proj['icon'] : (!empty($proj['docker']) ? "\xf0\x9f\x90\xb3" : match($proj['type']) { 'Node.js'=>"\xe2\xac\xa2",'Python'=>"\xf0\x9f\x90\x8d",'Link'=>"\xf0\x9f\x94\x97",default=>"\xe2\x9a\x99" }) ?><?php endif; ?></div>
+          <div class="proj-icon<?= $hasLogo ? ' has-logo' : ($aHlIcon && isset(HOMELAB_SVG_ICONS[$aHlIcon]) ? ' has-homelab' : '') ?>"><?php if ($hasLogo): ?><img src="<?= DASH_BASE ?>?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=dark" alt="" class="proj-logo-dark"><img src="<?= DASH_BASE ?>?asset=project-logo&name=<?= urlencode($proj['name']) ?>&variant=light" alt="" class="proj-logo-light"><?php elseif ($aHlIcon && isset(HOMELAB_SVG_ICONS[$aHlIcon])): ?><span class="homelab-icon"><?= homelabIconSvg($aHlIcon) ?></span><?php else: ?><?= !empty($proj['icon']) ? $proj['icon'] : (!empty($proj['docker']) ? "\xf0\x9f\x90\xb3" : match($proj['type']) { 'Node.js'=>"\xe2\xac\xa2",'Python'=>"\xf0\x9f\x90\x8d",'Link'=>"\xf0\x9f\x94\x97",default=>"\xe2\x9a\x99" }) ?><?php endif; ?></div>
           <span class="proj-name"><?= htmlspecialchars(!empty($proj['display_name']) ? $proj['display_name'] : $proj['name']) ?></span>
           <span class="proj-type"><?= htmlspecialchars(!empty($proj['docker']) ? (strlen($proj['type']) > 30 ? substr($proj['type'], 0, 30) . '...' : $proj['type']) : $proj['type']) ?></span>
         </div>
@@ -2955,11 +3007,11 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
         </div>
       </a>
       <div class="proj-actions">
-        <button type="button" class="proj-edit-btn" onclick="editProjectDesc(<?= htmlspecialchars(json_encode($proj['name']), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['description'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['icon'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['display_name'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode(!empty($proj['logo_dark_ext']) ? $proj['logo_dark_ext'] : ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode(!empty($proj['logo_light_ext']) ? $proj['logo_light_ext'] : ''), ENT_QUOTES) ?>,<?= $proj['status'] === 'maintenance' ? 'true' : 'false' ?>,<?= htmlspecialchars(json_encode($proj['homelab_icon'] ?? ''), ENT_QUOTES) ?>,<?= (int)($proj['manual_index'] ?? -1) ?>,<?= htmlspecialchars(json_encode($proj['url'] ?? ''), ENT_QUOTES) ?>)" title="<?= $t['project_edit'] ?>">
+        <button type="button" class="proj-edit-btn" onclick="editProjectDesc(<?= htmlspecialchars(json_encode($proj['name']), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['description'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['icon'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['display_name'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode(!empty($proj['logo_dark_ext']) ? $proj['logo_dark_ext'] : ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode(!empty($proj['logo_light_ext']) ? $proj['logo_light_ext'] : ''), ENT_QUOTES) ?>,<?= $proj['status'] === 'maintenance' ? 'true' : 'false' ?>,<?= htmlspecialchars(json_encode($proj['homelab_icon'] ?? ''), ENT_QUOTES) ?>,<?= (int)($proj['manual_index'] ?? -1) ?>,<?= htmlspecialchars(json_encode($proj['url'] ?? ''), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($proj['url_mode'] ?? 'auto'), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($dashCfg['project_custom_url'][$proj['name']] ?? ''), ENT_QUOTES) ?>)" title="<?= $t['project_edit'] ?>">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         </button>
         <?php if (!empty($proj['manual'])): ?>
-          <a href="/?delete_manual_link=<?= $proj['manual_index'] ?>" class="proj-delete-btn" onclick="return confirm('<?= $t['manual_link_delete_confirm'] ?>')" title="<?= $t['remove'] ?>">
+          <a href="<?= DASH_BASE ?>?delete_manual_link=<?= $proj['manual_index'] ?>" class="proj-delete-btn" onclick="return confirm('<?= $t['manual_link_delete_confirm'] ?>')" title="<?= $t['remove'] ?>">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
           </a>
         <?php endif; ?>
@@ -3012,7 +3064,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
         <span id="descModalName" style="font-size:.72rem;color:var(--text-dim);font-family:var(--mono)"></span>
       </div>
     </div>
-    <form method="POST" action="/" id="descForm" enctype="multipart/form-data" target="_self" onsubmit="syncEditor('descEditor','descFormDesc');closeDescModal()" style="overflow-y:auto;padding:0 2rem 2rem;flex:1;min-height:0">
+    <form method="POST" action="<?= DASH_BASE ?>" id="descForm" enctype="multipart/form-data" target="_self" onsubmit="syncEditor('descEditor','descFormDesc');closeDescModal()" style="overflow-y:auto;padding:0 2rem 2rem;flex:1;min-height:0">
       <input type="hidden" name="save_project_desc" value="1">
       <input type="hidden" name="project_name" id="descFormName">
       <input type="hidden" name="project_homelab_icon" id="descFormHomelabIcon">
@@ -3026,6 +3078,20 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
       <div id="descFormUrlWrap" style="display:none;margin-bottom:1.25rem">
         <label class="proj-edit-label"><?= $t['manual_link_url'] ?></label>
         <input type="url" name="project_url" id="descFormUrl" class="modal-input modal-input-text" placeholder="https://example.com">
+      </div>
+
+      <!-- URL-Modus / URL Mode (nicht für manuelle Links) -->
+      <div id="descFormUrlModeWrap" style="margin-bottom:1.25rem">
+        <label class="proj-edit-label"><?= $t['url_mode'] ?></label>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <select name="project_url_mode" id="descFormUrlMode" class="modal-input modal-input-text" style="flex:1" onchange="toggleCustomUrlInput(this.value)">
+            <option value="auto"><?= $t['url_mode_auto'] ?></option>
+            <option value="ip_port"><?= $t['url_mode_ip_port'] ?></option>
+            <option value="dns"><?= $t['url_mode_dns'] ?></option>
+            <option value="custom"><?= $t['url_mode_custom'] ?></option>
+          </select>
+        </div>
+        <input type="url" name="project_custom_url" id="descFormCustomUrl" class="modal-input modal-input-text" placeholder="https://example.com" style="display:none;margin-top:.5rem">
       </div>
 
       <!-- Logo / Icon — aufklappbar / collapsible -->
@@ -3124,7 +3190,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
 <div class="modal-bg" id="addLinkModal">
   <div class="modal" style="text-align:left;max-width:440px">
     <h2><?= $t['manual_link_add'] ?></h2>
-    <form method="POST" action="/" id="addLinkForm" onsubmit="syncEditor('mlEditor','mlDesc')">
+    <form method="POST" action="<?= DASH_BASE ?>" id="addLinkForm" onsubmit="syncEditor('mlEditor','mlDesc')">
       <label style="font-size:.78rem;font-weight:600;display:block;margin-bottom:.35rem"><?= $t['manual_link_name'] ?> *</label>
       <input type="text" name="manual_link_name" id="mlName" class="modal-input modal-input-text" style="margin-bottom:.75rem" required placeholder="My App">
       <label style="font-size:.78rem;font-weight:600;display:block;margin-bottom:.35rem"><?= $t['manual_link_url'] ?> *</label>
@@ -3152,7 +3218,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
   <div class="modal">
     <h2><?= $t['admin_access'] ?></h2>
     <p><?= $t['admin_desc'] ?></p>
-    <form method="POST" action="/">
+    <form method="POST" action="<?= DASH_BASE ?>">
       <input type="text" name="username" class="modal-input modal-input-text<?= $loginError ? ' error' : '' ?>" id="loginUser"
              autocomplete="username" placeholder="<?= $t['username'] ?>" required>
       <input type="password" name="password" class="modal-input<?= $loginError ? ' error' : '' ?>" id="loginPass"
@@ -3161,7 +3227,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
       <button type="submit" class="modal-submit"><?= $t['login'] ?></button>
       <?php $smtpConfigured = !empty($dashCfg['smtp_host'] ?? ''); ?>
       <?php if ($smtpConfigured): ?>
-        <a href="/?action=forgot_password" class="forgot-link"><?= $t['forgot_pw'] ?></a>
+        <a href="<?= DASH_BASE ?>?action=forgot_password" class="forgot-link"><?= $t['forgot_pw'] ?></a>
       <?php endif; ?>
     </form>
     <?php $resetSuccess = !empty($_SESSION['dashboard_reset_success']); unset($_SESSION['dashboard_reset_success']); ?>
@@ -3174,6 +3240,7 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
 <?php endif; ?>
 
 <script>
+var DASH_BASE='<?= DASH_BASE ?>';
 function updateClock(){
   var n=new Date();
   var loc='<?= $lang === 'de' ? 'de-DE' : 'en-US' ?>';
@@ -3291,13 +3358,22 @@ function filterHomelabIcons(q){
     b.style.display=(key.indexOf(q)!==-1||label.indexOf(q)!==-1)?'':'none';
   });
 }
-function editProjectDesc(name,current,icon,title,logoDarkExt,logoLightExt,maintenance,homelabIcon,manualIndex,manualUrl){
+function toggleCustomUrlInput(mode){
+  var ci=document.getElementById('descFormCustomUrl');
+  if(ci) ci.style.display=mode==='custom'?'block':'none';
+}
+function editProjectDesc(name,current,icon,title,logoDarkExt,logoLightExt,maintenance,homelabIcon,manualIndex,manualUrl,urlMode,customUrl){
   _projName=name;
   document.getElementById('descFormName').value=name;
   document.getElementById('descFormTitle').value=title||name;
   document.getElementById('descFormManualIndex').value=(manualIndex!=null&&manualIndex>=0)?manualIndex:-1;
   var urlWrap=document.getElementById('descFormUrlWrap');var urlInput=document.getElementById('descFormUrl');
-  if(manualIndex!=null&&manualIndex>=0){urlWrap.style.display='block';urlInput.value=manualUrl||''}else{urlWrap.style.display='none';urlInput.value=''}
+  var urlModeWrap=document.getElementById('descFormUrlModeWrap');
+  if(manualIndex!=null&&manualIndex>=0){urlWrap.style.display='block';urlInput.value=manualUrl||'';if(urlModeWrap)urlModeWrap.style.display='none'}else{urlWrap.style.display='none';urlInput.value='';if(urlModeWrap)urlModeWrap.style.display='block'}
+  var modeSelect=document.getElementById('descFormUrlMode');
+  if(modeSelect){modeSelect.value=urlMode||'auto';toggleCustomUrlInput(urlMode||'auto')}
+  var customInput=document.getElementById('descFormCustomUrl');
+  if(customInput) customInput.value=customUrl||'';
   document.getElementById('descFormDesc').value=current;
   document.getElementById('descFormIcon').value=icon||'';
   document.getElementById('descFormHomelabIcon').value=homelabIcon||'';
@@ -3313,7 +3389,7 @@ function editProjectDesc(name,current,icon,title,logoDarkExt,logoLightExt,mainte
     var noneEl=document.getElementById('projLogo_'+v+'_none');
     var img=document.getElementById('projLogo_'+v+'_img');
     if(ext){
-      img.src='/?asset=project-logo&name='+encodeURIComponent(name)+'&variant='+v+'&t='+Date.now();
+      img.src=DASH_BASE+'?asset=project-logo&name='+encodeURIComponent(name)+'&variant='+v+'&t='+Date.now();
       hasEl.style.display='block';
       noneEl.style.display='none';
     }else{
@@ -3352,7 +3428,7 @@ function previewProjLogo(variant,input){
 }
 function removeProjLogo(variant){
   if(!_projName)return;
-  fetch('/?remove_project_logo='+encodeURIComponent(_projName)+'&variant='+variant,{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(){
+  fetch(DASH_BASE+'?remove_project_logo='+encodeURIComponent(_projName)+'&variant='+variant,{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(){
     document.getElementById('projLogo_'+variant+'_has').style.display='none';
     document.getElementById('projLogo_'+variant+'_none').style.display='block';
     document.getElementById('projLogo_'+variant+'_img').src='';
@@ -3406,7 +3482,7 @@ document.getElementById('addLinkModal').addEventListener('click',function(e){
 });
 function barCol(p){return p>=90?'#ef4444':p>=75?'#f59e0b':'var(--accent)'}
 function refreshStats(){
-  fetch('/?action=system_stats').then(function(r){return r.json()}).then(function(d){
+  fetch(DASH_BASE+'?action=system_stats').then(function(r){return r.json()}).then(function(d){
     var c=barCol(d.loadPercent),m=barCol(d.ramPercent),k=barCol(d.diskPercent);
     document.getElementById('cpuPct').textContent=d.loadPercent+'%';document.getElementById('cpuPct').style.color=c;
     document.getElementById('cpuBar').style.cssText='--w:'+d.loadPercent+'%;background:'+c;
@@ -3426,7 +3502,7 @@ function checkUpdate(){
   if(btn) btn.disabled=true;
   res.innerHTML='<span class="spinner"></span> <?= $t['js_checking'] ?>';
   res.className='update-result';
-  fetch('/?action=check_update').then(function(r){return r.json()}).then(function(d){
+  fetch(DASH_BASE+'?action=check_update').then(function(r){return r.json()}).then(function(d){
     if(btn) btn.disabled=false;
     if(d.error){
       res.className='update-result error';
@@ -3459,7 +3535,7 @@ function doUpdate(btn){
   var res=document.getElementById('updateResult');
   res.innerHTML='<span class="spinner"></span> <?= $t['js_installing'] ?>';
   res.className='update-result';
-  fetch('/?action=do_update').then(function(r){return r.json()}).then(function(d){
+  fetch(DASH_BASE+'?action=do_update').then(function(r){return r.json()}).then(function(d){
     if(d.error){
       res.className='update-result error';
       res.textContent=d.error;
