@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.73');
+define('WEBDASH_VERSION', '1.74');
 
 // --- Basispfad / Base path ---
 // Erkennt automatisch, ob webdash in einem Unterverzeichnis läuft
@@ -274,18 +274,17 @@ function discoverDockerContainers(): array {
         $statusText = $c['Status'] ?? '';
         $containerId = substr($c['Id'] ?? '', 0, 12);
         // Build URL from port mapping
-        // Priorität / Priority: webdash.url Label > webdash.port Label > PublicPort > PrivatePort (Host-Network)
+        // Priorität / Priority: webdash.url > webdash.port > PublicPort > PrivatePort > ExposedPorts (Inspect)
         $url = '';
         $host = $dockerHostIp;
         if (str_contains($host, ':')) $host = explode(':', $host)[0];
         $ports = $c['Ports'] ?? [];
         if (!empty($labels['webdash.port'])) {
-            // Expliziter Port per Label / Explicit port via label
             $labelPort = (int)$labels['webdash.port'];
             $proto = ($labelPort == 443 || $labelPort == 9443 || $labelPort == 8443) ? 'https' : 'http';
             $url = "$proto://$host:$labelPort/";
         } else {
-            // Erst PublicPort suchen / First look for PublicPort
+            // 1. PublicPort suchen / Look for PublicPort
             foreach ($ports as $p) {
                 if (!empty($p['PublicPort'])) {
                     $pubPort = (int)$p['PublicPort'];
@@ -295,13 +294,33 @@ function discoverDockerContainers(): array {
                     break;
                 }
             }
-            // Fallback: PrivatePort wenn kein PublicPort vorhanden (Host-Network etc.)
-            // Fallback: PrivatePort if no PublicPort available (host network etc.)
-            if ($url === '' && !empty($ports)) {
-                $privPort = (int)($ports[0]['PrivatePort'] ?? 0);
-                if ($privPort) {
-                    $proto = ($privPort == 443 || $privPort == 9443 || $privPort == 8443) ? 'https' : 'http';
-                    $url = "$proto://$host:$privPort/";
+            // 2. Fallback: PrivatePort aus Liste / PrivatePort from list
+            if ($url === '') {
+                foreach ($ports as $p) {
+                    $privPort = (int)($p['PrivatePort'] ?? 0);
+                    if ($privPort) {
+                        $proto = ($privPort == 443 || $privPort == 9443 || $privPort == 8443) ? 'https' : 'http';
+                        $url = "$proto://$host:$privPort/";
+                        break;
+                    }
+                }
+            }
+            // 3. Fallback: Container inspizieren für ExposedPorts (Host-Network etc.)
+            // Fallback: Inspect container for ExposedPorts (host network etc.)
+            if ($url === '' && $state === 'running') {
+                $inspect = dockerApiGet('/containers/' . ($c['Id'] ?? '') . '/json');
+                if ($inspect) {
+                    $exposed = $inspect['Config']['ExposedPorts'] ?? [];
+                    // Höchsten Port nehmen (meist Web-UI) / Take highest port (usually web UI)
+                    $bestPort = 0;
+                    foreach (array_keys($exposed) as $ep) {
+                        $epNum = (int)preg_replace('/\/.*/', '', $ep);
+                        if ($epNum > $bestPort) $bestPort = $epNum;
+                    }
+                    if ($bestPort) {
+                        $proto = ($bestPort == 443 || $bestPort == 9443 || $bestPort == 8443) ? 'https' : 'http';
+                        $url = "$proto://$host:$bestPort/";
+                    }
                 }
             }
         }
@@ -1556,6 +1575,9 @@ foreach (($dashCfg['manual_links'] ?? []) as $i => $ml) {
     $mlCheckUrl = $mlHost ? ($mlScheme . '://' . $mlHost . ($mlPort ? ':' . $mlPort : '') . '/') : '';
     $mlCode = $mlCheckUrl ? httpHealthCheck($mlCheckUrl) : 0;
     $mlName = $ml['name'] ?? '';
+    // Bei Verbindungsfehler (Code 0) manuellen Link als "online" anzeigen — der User hat die URL selbst eingetragen
+    // On connection failure (code 0) show manual link as "online" — user added the URL themselves
+    $mlStatus = !empty($dashCfg['project_maintenance'][$mlName]) ? 'maintenance' : ($mlCode === 0 && $mlCheckUrl ? 'online' : httpCodeToStatus($mlCode));
     $projects[] = [
         'name'         => $mlName,
         'url'          => $mlUrl,
@@ -1567,7 +1589,7 @@ foreach (($dashCfg['manual_links'] ?? []) as $i => $ml) {
         'homelab_icon' => $dashCfg['project_homelab_icon'][$mlName] ?? '',
         'logo_dark_ext'  => $dashCfg['project_logo_dark_ext'][$mlName] ?? '',
         'logo_light_ext' => $dashCfg['project_logo_light_ext'][$mlName] ?? '',
-        'status'       => !empty($dashCfg['project_maintenance'][$mlName]) ? 'maintenance' : httpCodeToStatus($mlCode),
+        'status'       => $mlStatus,
         'statusCode'   => $mlCode,
         'manual'       => true,
         'manual_index' => $i,
