@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.72');
+define('WEBDASH_VERSION', '1.73');
 
 // --- Basispfad / Base path ---
 // Erkennt automatisch, ob webdash in einem Unterverzeichnis läuft
@@ -279,25 +279,29 @@ function discoverDockerContainers(): array {
         $host = $dockerHostIp;
         if (str_contains($host, ':')) $host = explode(':', $host)[0];
         $ports = $c['Ports'] ?? [];
-        // Netzwerk-Modus prüfen / Check network mode
-        $networkMode = $c['HostConfig']['NetworkMode'] ?? '';
-        $isHostNetwork = ($networkMode === 'host');
         if (!empty($labels['webdash.port'])) {
             // Expliziter Port per Label / Explicit port via label
             $labelPort = (int)$labels['webdash.port'];
-            $proto = ($labelPort == 443) ? 'https' : 'http';
+            $proto = ($labelPort == 443 || $labelPort == 9443 || $labelPort == 8443) ? 'https' : 'http';
             $url = "$proto://$host:$labelPort/";
         } else {
+            // Erst PublicPort suchen / First look for PublicPort
             foreach ($ports as $p) {
-                $pubPort = $p['PublicPort'] ?? 0;
-                $privPort = $p['PrivatePort'] ?? 0;
-                // PublicPort verwenden wenn vorhanden, sonst PrivatePort bei Host-Network
-                // Use PublicPort if available, otherwise PrivatePort for host network
-                $usePort = $pubPort ?: ($isHostNetwork ? $privPort : 0);
-                if ($usePort) {
-                    $proto = ($usePort == 443 || $privPort == 443) ? 'https' : 'http';
-                    $url = "$proto://$host:$usePort/";
+                if (!empty($p['PublicPort'])) {
+                    $pubPort = (int)$p['PublicPort'];
+                    $privPort = (int)($p['PrivatePort'] ?? 0);
+                    $proto = ($pubPort == 443 || $pubPort == 9443 || $pubPort == 8443 || $privPort == 443) ? 'https' : 'http';
+                    $url = "$proto://$host:$pubPort/";
                     break;
+                }
+            }
+            // Fallback: PrivatePort wenn kein PublicPort vorhanden (Host-Network etc.)
+            // Fallback: PrivatePort if no PublicPort available (host network etc.)
+            if ($url === '' && !empty($ports)) {
+                $privPort = (int)($ports[0]['PrivatePort'] ?? 0);
+                if ($privPort) {
+                    $proto = ($privPort == 443 || $privPort == 9443 || $privPort == 8443) ? 'https' : 'http';
+                    $url = "$proto://$host:$privPort/";
                 }
             }
         }
@@ -1544,10 +1548,13 @@ if (!$needsSetup && $dockerMode) {
 // --- Manuelle Links einmergen ---
 foreach (($dashCfg['manual_links'] ?? []) as $i => $ml) {
     $mlUrl = $ml['url'] ?? '';
-    // Nur Host pingen, nicht volle URL mit Port / Only ping host, not full URL with port
-    $mlHost = $mlUrl ? parse_url($mlUrl, PHP_URL_HOST) : '';
-    $mlScheme = $mlUrl ? (parse_url($mlUrl, PHP_URL_SCHEME) ?: 'http') : 'http';
-    $mlCode = $mlHost ? httpHealthCheck($mlScheme . '://' . $mlHost . '/') : 0;
+    // Host+Port+Schema für Health-Check extrahieren / Extract host+port+scheme for health check
+    $mlParsed = $mlUrl ? parse_url($mlUrl) : [];
+    $mlHost = $mlParsed['host'] ?? '';
+    $mlScheme = $mlParsed['scheme'] ?? 'http';
+    $mlPort = $mlParsed['port'] ?? '';
+    $mlCheckUrl = $mlHost ? ($mlScheme . '://' . $mlHost . ($mlPort ? ':' . $mlPort : '') . '/') : '';
+    $mlCode = $mlCheckUrl ? httpHealthCheck($mlCheckUrl) : 0;
     $mlName = $ml['name'] ?? '';
     $projects[] = [
         'name'         => $mlName,
@@ -2141,8 +2148,8 @@ header{
 .proj-meta-item{display:flex;align-items:center;gap:.35rem}
 .proj-status{display:flex;align-items:center;gap:.35rem;margin-left:auto;font-weight:500}
 .proj-actions{display:flex;flex-direction:column;align-items:center;gap:.35rem;padding:1.25rem .75rem 1.25rem 0;flex-shrink:0;align-self:flex-start}
-.proj-edit-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;width:2rem;height:2rem;border-radius:8px;opacity:.8;transition:opacity .2s,transform .2s,border-color .2s}
-.proj-edit-btn:hover{opacity:1;transform:rotate(45deg);border-color:var(--accent)}
+.proj-edit-btn{background:transparent;border:1px solid transparent;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;width:2rem;height:2rem;border-radius:50%;opacity:.5;transition:all .25s ease}
+.proj-edit-btn:hover{opacity:1;color:var(--accent);background:var(--accent-dim);border-color:var(--border)}
 .proj-delete-btn{color:var(--danger);display:flex;align-items:center;opacity:.6;transition:opacity .2s}
 .proj-delete-btn:hover{opacity:1}
 .proj-add{border:2px dashed var(--text-dim);background:var(--surface-2);cursor:pointer}.proj-add:hover{border-color:var(--accent);background:var(--surface)}.proj-add .proj-link{opacity:.7;transition:opacity .2s;text-decoration:none}.proj-add:hover .proj-link{opacity:1}
