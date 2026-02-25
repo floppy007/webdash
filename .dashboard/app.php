@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.74');
+define('WEBDASH_VERSION', '1.75');
 
 // --- Basispfad / Base path ---
 // Erkennt automatisch, ob webdash in einem Unterverzeichnis läuft
@@ -1575,9 +1575,21 @@ foreach (($dashCfg['manual_links'] ?? []) as $i => $ml) {
     $mlCheckUrl = $mlHost ? ($mlScheme . '://' . $mlHost . ($mlPort ? ':' . $mlPort : '') . '/') : '';
     $mlCode = $mlCheckUrl ? httpHealthCheck($mlCheckUrl) : 0;
     $mlName = $ml['name'] ?? '';
-    // Bei Verbindungsfehler (Code 0) manuellen Link als "online" anzeigen — der User hat die URL selbst eingetragen
-    // On connection failure (code 0) show manual link as "online" — user added the URL themselves
-    $mlStatus = !empty($dashCfg['project_maintenance'][$mlName]) ? 'maintenance' : ($mlCode === 0 && $mlCheckUrl ? 'online' : httpCodeToStatus($mlCode));
+    // Manuelle Links: nur Maintenance oder explizite Fehlercodes anzeigen, sonst "online"
+    // Manual links: only show maintenance or explicit error codes, otherwise "online"
+    if (!empty($dashCfg['project_maintenance'][$mlName])) {
+        $mlStatus = 'maintenance';
+    } elseif ($mlCode >= 200 && $mlCode < 400) {
+        $mlStatus = 'online';
+    } elseif ($mlCode === 403) {
+        $mlStatus = 'gesperrt';
+    } elseif ($mlCode >= 400) {
+        $mlStatus = 'fehler';
+    } else {
+        // Code 0 oder nicht erreichbar → trotzdem als online anzeigen (User hat URL selbst eingetragen)
+        // Code 0 or unreachable → still show as online (user added URL themselves)
+        $mlStatus = 'online';
+    }
     $projects[] = [
         'name'         => $mlName,
         'url'          => $mlUrl,
@@ -2519,7 +2531,9 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
     <?php foreach ($projects as $i => $proj):
       $isOnline = $proj['status'] === 'online';
       $hasUrl = !empty($proj['url']);
-      $clickable = $isOnline && $hasUrl;
+      $isManual = !empty($proj['manual']);
+      // Manuelle Links immer klickbar wenn URL vorhanden / Manual links always clickable if URL exists
+      $clickable = $hasUrl && ($isOnline || $isManual);
     ?>
     <a href="<?= $clickable ? htmlspecialchars($proj['url']) : '#' ?>"
        class="uproj<?= $clickable ? '' : ' disabled' ?>"
