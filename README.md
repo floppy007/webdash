@@ -14,6 +14,14 @@ A lightweight, self-hosted server dashboard in a single PHP file — native or a
 
 ---
 
+## Screenshots
+
+| Dashboard | Einstellungen / Settings |
+|---|---|
+| ![Dashboard](scr/scr_01.png) | ![Settings](scr/scr_02.png) |
+
+---
+
 ## Deutsch
 
 ### Was ist webdash?
