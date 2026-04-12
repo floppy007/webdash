@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.76');
+define('WEBDASH_VERSION', '1.77');
 
 // --- Basispfad / Base path ---
 // Erkennt automatisch, ob webdash in einem Unterverzeichnis läuft
@@ -1726,13 +1726,29 @@ function httpCodeToStatus(int $code): string {
 }
 // HTTP-Health-Check per CURL / HTTP health check via CURL
 function httpHealthCheck(string $url, array $extraHeaders = []): int {
-    $ch = curl_init($url);
-    $opts = [CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>3,CURLOPT_CONNECTTIMEOUT=>2,CURLOPT_NOBODY=>true,CURLOPT_FOLLOWLOCATION=>true,CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_SSL_VERIFYHOST=>0];
-    if ($extraHeaders) $opts[CURLOPT_HTTPHEADER] = $extraHeaders;
-    curl_setopt_array($ch, $opts);
-    curl_exec($ch);
-    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    $runCheck = function(bool $headOnly) use ($url, $extraHeaders): int {
+        $ch = curl_init($url);
+        $opts = [
+            CURLOPT_RETURNTRANSFER=>true,
+            CURLOPT_TIMEOUT=>3,
+            CURLOPT_CONNECTTIMEOUT=>2,
+            CURLOPT_NOBODY=>$headOnly,
+            CURLOPT_FOLLOWLOCATION=>true,
+            CURLOPT_SSL_VERIFYPEER=>false,
+            CURLOPT_SSL_VERIFYHOST=>0,
+        ];
+        if ($extraHeaders) $opts[CURLOPT_HTTPHEADER] = $extraHeaders;
+        curl_setopt_array($ch, $opts);
+        curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return $code;
+    };
+
+    $code = $runCheck(true);
+    if (in_array($code, [405, 501], true)) {
+        $code = $runCheck(false);
+    }
     return $code;
 }
 // Config-Overrides auf Projekt anwenden / Apply config overrides to project
