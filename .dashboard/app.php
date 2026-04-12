@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.77');
+define('WEBDASH_VERSION', '1.78');
 
 // --- Basispfad / Base path ---
 // Erkennt automatisch, ob webdash in einem Unterverzeichnis läuft
@@ -742,6 +742,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['p
         }
     }
 
+    if ($authenticated) {
+        session_regenerate_id(true);
+    }
+
     if (!$authenticated) {
         $_SESSION['dashboard_login_error'] = $t['err_creds'];
     }
@@ -875,10 +879,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user_idx']) && !
 }
 
 // --- Benutzer loeschen / Delete user ---
-if (isset($_GET['delete_user']) && !empty($_SESSION['dashboard_user'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user']) && !empty($_SESSION['dashboard_user'])) {
     $cfg = dashConfig();
     $users = $cfg['users'] ?? [];
-    $idx = (int)$_GET['delete_user'];
+    $idx = (int)$_POST['delete_user'];
     if (isset($users[$idx])) {
         array_splice($users, $idx, 1);
         $cfg['users'] = $users;
@@ -1066,8 +1070,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_manual_link']) &&
 }
 
 // --- Manuellen Link löschen ---
-if (isset($_GET['delete_manual_link']) && !empty($_SESSION['dashboard_user'])) {
-    $idx = (int) $_GET['delete_manual_link'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_manual_link']) && !empty($_SESSION['dashboard_user'])) {
+    $idx = (int) $_POST['delete_manual_link'];
     $cfg = dashConfig();
     if (isset($cfg['manual_links'][$idx])) {
         array_splice($cfg['manual_links'], $idx, 1);
@@ -1079,9 +1083,9 @@ if (isset($_GET['delete_manual_link']) && !empty($_SESSION['dashboard_user'])) {
 }
 
 // --- Projekt-Logo entfernen ---
-if (isset($_GET['remove_project_logo']) && !empty($_SESSION['dashboard_user'])) {
-    $rpName = basename($_GET['remove_project_logo']);
-    $rpVariant = $_GET['variant'] ?? 'both';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_project_logo']) && !empty($_SESSION['dashboard_user'])) {
+    $rpName = basename($_POST['remove_project_logo']);
+    $rpVariant = $_POST['variant'] ?? 'both';
     $cfg = dashConfig();
     $variants = $rpVariant === 'both' ? ['dark','light'] : [$rpVariant];
     foreach ($variants as $v) {
@@ -1100,8 +1104,8 @@ if (isset($_GET['remove_project_logo']) && !empty($_SESSION['dashboard_user'])) 
 }
 
 // --- Logo entfernen ---
-if (isset($_GET['remove_logo']) && !empty($_SESSION['dashboard_user'])) {
-    $variant = $_GET['remove_logo'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_logo']) && !empty($_SESSION['dashboard_user'])) {
+    $variant = $_POST['remove_logo'];
     if (in_array($variant, ['dark', 'light', 'bg_image'], true)) {
         if ($variant === 'bg_image') {
             $base = DASH_BG_IMAGE;
@@ -1122,8 +1126,13 @@ if (isset($_GET['remove_logo']) && !empty($_SESSION['dashboard_user'])) {
 }
 
 // --- Abmelden ---
-if (isset($_GET['logout'])) {
-    unset($_SESSION['dashboard_user']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+    }
+    session_destroy();
     header('Location: ' . DASH_BASE);
     exit;
 }
@@ -1158,10 +1167,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'system_stats' && $isAdmin) {
 }
 
 // --- Update API (AJAX, nur Admin) ---
-if (isset($_GET['action']) && $isAdmin && in_array($_GET['action'], ['check_update', 'do_update'], true)) {
+if (
+    ($isAdmin && isset($_GET['action']) && $_GET['action'] === 'check_update')
+    || ($isAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'do_update'))
+) {
     header('Content-Type: application/json; charset=utf-8');
 
-    if ($_GET['action'] === 'check_update') {
+    if (($_GET['action'] ?? '') === 'check_update') {
         $ch = curl_init('https://api.github.com/repos/floppy007/webdash/releases/latest');
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -1190,7 +1202,7 @@ if (isset($_GET['action']) && $isAdmin && in_array($_GET['action'], ['check_upda
         exit;
     }
 
-    if ($_GET['action'] === 'do_update') {
+    if (($_POST['action'] ?? '') === 'do_update') {
         $ch = curl_init('https://api.github.com/repos/floppy007/webdash/releases/latest');
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -2566,10 +2578,13 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       </a>
       <?php if ($isAdmin): ?>
-        <a href="<?= DASH_BASE ?>?logout" class="btn-link danger" title="<?= $t['logout'] ?>">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          <?= $t['logout'] ?>
-        </a>
+        <form method="POST" action="<?= DASH_BASE ?>" style="display:inline">
+          <input type="hidden" name="logout" value="1">
+          <button type="submit" class="btn-link danger" title="<?= $t['logout'] ?>" style="border:none;background:none;padding:0;cursor:pointer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <?= $t['logout'] ?>
+          </button>
+        </form>
       <?php endif; ?>
     </div>
   </header>
@@ -2705,7 +2720,10 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
             <input type="file" name="logo_dark" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" onchange="this.form.submit()" style="display:none">
           </label>
           <?php if ($hasLogoDark): ?>
-            <a href="<?= DASH_BASE ?>?remove_logo=dark" class="btn-link danger"><?= $t['remove'] ?></a>
+            <form method="POST" action="<?= DASH_BASE ?>" style="display:inline">
+              <input type="hidden" name="remove_logo" value="dark">
+              <button type="submit" class="btn-link danger" style="border:none;background:none;padding:0;cursor:pointer"><?= $t['remove'] ?></button>
+            </form>
           <?php endif; ?>
         </div>
       </form>
@@ -2721,7 +2739,10 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
             <input type="file" name="logo_light" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" onchange="this.form.submit()" style="display:none">
           </label>
           <?php if ($hasLogoLight): ?>
-            <a href="<?= DASH_BASE ?>?remove_logo=light" class="btn-link danger"><?= $t['remove'] ?></a>
+            <form method="POST" action="<?= DASH_BASE ?>" style="display:inline">
+              <input type="hidden" name="remove_logo" value="light">
+              <button type="submit" class="btn-link danger" style="border:none;background:none;padding:0;cursor:pointer"><?= $t['remove'] ?></button>
+            </form>
           <?php endif; ?>
         </div>
       </form>
@@ -3043,7 +3064,10 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                 <?= $t['users_save'] ?>
               </button>
-              <a href="<?= DASH_BASE ?>?delete_user=<?= $idx ?>" class="btn-link danger" style="font-size:.72rem;margin-left:auto" onclick="return confirm('<?= $t['users_delete_confirm'] ?>')"><?= $t['users_delete'] ?></a>
+              <form method="POST" action="<?= DASH_BASE ?>" style="margin-left:auto" onsubmit="return confirm('<?= $t['users_delete_confirm'] ?>')">
+                <input type="hidden" name="delete_user" value="<?= $idx ?>">
+                <button type="submit" class="btn-link danger" style="font-size:.72rem;border:none;background:none;padding:0;cursor:pointer"><?= $t['users_delete'] ?></button>
+              </form>
             </form>
           </div>
         </div>
@@ -3171,9 +3195,12 @@ body.has-bg .footer-copy a{color:var(--text-muted)}
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         </button>
         <?php if (!empty($proj['manual'])): ?>
-          <a href="<?= DASH_BASE ?>?delete_manual_link=<?= $proj['manual_index'] ?>" class="proj-delete-btn" onclick="return confirm('<?= $t['manual_link_delete_confirm'] ?>')" title="<?= $t['remove'] ?>">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-          </a>
+          <form method="POST" action="<?= DASH_BASE ?>" onsubmit="return confirm('<?= $t['manual_link_delete_confirm'] ?>')">
+            <input type="hidden" name="delete_manual_link" value="<?= $proj['manual_index'] ?>">
+            <button type="submit" class="proj-delete-btn" title="<?= $t['remove'] ?>" style="border:none;cursor:pointer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            </button>
+          </form>
         <?php endif; ?>
       </div>
     </div>
@@ -3588,7 +3615,12 @@ function previewProjLogo(variant,input){
 }
 function removeProjLogo(variant){
   if(!_projName)return;
-  fetch(DASH_BASE+'?remove_project_logo='+encodeURIComponent(_projName)+'&variant='+variant,{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(){
+  fetch(DASH_BASE,{
+    method:'POST',
+    credentials:'same-origin',
+    headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+    body:new URLSearchParams({remove_project_logo:_projName,variant:variant}).toString()
+  }).then(function(){
     document.getElementById('projLogo_'+variant+'_has').style.display='none';
     document.getElementById('projLogo_'+variant+'_none').style.display='block';
     document.getElementById('projLogo_'+variant+'_img').src='';
@@ -3695,7 +3727,12 @@ function doUpdate(btn){
   var res=document.getElementById('updateResult');
   res.innerHTML='<span class="spinner"></span> <?= $t['js_installing'] ?>';
   res.className='update-result';
-  fetch(DASH_BASE+'?action=do_update').then(function(r){return r.json()}).then(function(d){
+  fetch(DASH_BASE,{
+    method:'POST',
+    credentials:'same-origin',
+    headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+    body:new URLSearchParams({action:'do_update'}).toString()
+  }).then(function(r){return r.json()}).then(function(d){
     if(d.error){
       res.className='update-result error';
       res.textContent=d.error;
