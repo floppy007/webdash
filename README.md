@@ -24,6 +24,7 @@ A lightweight, self-hosted server dashboard in a single PHP file — native or a
 
 ## Zusatzdokumentation
 
+- [Changelog](CHANGELOG.md)
 - [Docker-Networking und Erreichbarkeit](docs/DOCKER-NETWORKING.md)
 
 ---
