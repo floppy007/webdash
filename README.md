@@ -22,6 +22,12 @@ A lightweight, self-hosted server dashboard in a single PHP file — native or a
 
 ---
 
+## Zusatzdokumentation
+
+- [Docker-Networking und Erreichbarkeit](docs/DOCKER-NETWORKING.md)
+
+---
+
 ## Deutsch
 
 ### Was ist webdash?
@@ -61,7 +67,9 @@ services:
       - "8080:80"
     environment:
       - WEBDASH_DOCKER_MODE=true
-      #- WEBDASH_HOST_IP=192.168.1.100  # Optional: nur bei Reverse-Proxy
+      #- WEBDASH_HOST_IP=192.168.1.100  # Optional: Ziel-Host fuer IP:PORT-Links
+      #- WEBDASH_DOCKER_HEALTH_MODE=state # state|http|off
+      #- WEBDASH_DOCKER_ALLOW_PRIVATE_PORTS=false # Fallback auf interne Ports erlauben
       #- WEBDASH_HOSTNAME=mein-server    # Optional: Anzeigename statt Container-ID
       #- WEBDASH_SCAN_DIR=/sites         # Optional: zusätzlich Verzeichnis scannen
     volumes:
@@ -85,7 +93,9 @@ Dashboard öffnen: `http://SERVER-IP:8080`
 | Variable | Beschreibung | Pflicht |
 |---|---|---|
 | `WEBDASH_DOCKER_MODE` | `true` aktiviert Docker-Modus (Container statt Verzeichnisse) | Ja |
-| `WEBDASH_HOST_IP` | Host-IP für Container-URLs (Default: `HTTP_HOST`) | Optional |
+| `WEBDASH_HOST_IP` | Ziel-Host für automatisch gebaute `IP:PORT`-Links | Optional |
+| `WEBDASH_DOCKER_HEALTH_MODE` | `state` = Docker-Status, `http` = echter HTTP-Check, `off` = nur State ohne Reachability | Optional |
+| `WEBDASH_DOCKER_ALLOW_PRIVATE_PORTS` | `true` erlaubt Fallback auf nicht veröffentlichte Container-Ports | Optional |
 | `WEBDASH_HOSTNAME` | Anzeigename im Dashboard (Default: System-Hostname) | Optional |
 | `WEBDASH_SCAN_DIR` | Zusätzliches Verzeichnis scannen (+ Volume-Mount nötig) | Optional |
 
@@ -97,6 +107,9 @@ docker run -d \
   --label webdash.icon="🎮" \
   --label webdash.description="Beschreibung der App" \
   --label webdash.url="http://{HOST_IP}:3000" \
+  --label webdash.host="app.example.com" \
+  --label webdash.scheme="https" \
+  --label webdash.path="/" \
   --label webdash.hidden=true \
   nginx
 ```
@@ -106,8 +119,18 @@ docker run -d \
 | `webdash.name` | Anzeigename (statt Container-Name) |
 | `webdash.icon` | Emoji-Icon (Default: 🐳) |
 | `webdash.description` | Beschreibungstext |
-| `webdash.url` | Eigene URL (`{HOST_IP}` wird ersetzt) |
+| `webdash.url` | Volle Ziel-URL, höchste Priorität (`{HOST_IP}` wird ersetzt) |
+| `webdash.host` | Expliziter Ziel-Host oder Domain für die App |
+| `webdash.scheme` | `http` oder `https` für `webdash.host` / `webdash.port` |
+| `webdash.path` | Optionaler Pfad, z.B. `/app` |
+| `webdash.port` | Expliziter Ziel-Port statt Auto-Erkennung |
 | `webdash.hidden` | `true` = Container im Dashboard ausblenden |
+
+Hinweis:
+
+- Ohne `webdash.url` oder `webdash.host` nutzt webdash nur veröffentlichte Host-Ports als Auto-Fallback.
+- Nicht veröffentlichte interne Container-Ports werden standardmäßig nicht mehr verlinkt, weil sie im Browser meist nicht erreichbar sind.
+- Reverse-Proxy- oder Domain-Setups sollten `webdash.url` oder `webdash.host` setzen.
 
 #### Variante 2: Installations-Wizard (Bare-Metal)
 
@@ -225,7 +248,9 @@ services:
       - "8080:80"
     environment:
       - WEBDASH_DOCKER_MODE=true
-      #- WEBDASH_HOST_IP=192.168.1.100  # Optional: only for reverse proxy
+      #- WEBDASH_HOST_IP=192.168.1.100  # Optional: target host for IP:PORT links
+      #- WEBDASH_DOCKER_HEALTH_MODE=state # state|http|off
+      #- WEBDASH_DOCKER_ALLOW_PRIVATE_PORTS=false # allow fallback to internal ports
       #- WEBDASH_HOSTNAME=my-server      # Optional: display name instead of container ID
       #- WEBDASH_SCAN_DIR=/sites         # Optional: also scan a directory
     volumes:
@@ -249,7 +274,9 @@ Open dashboard: `http://SERVER-IP:8080`
 | Variable | Description | Required |
 |---|---|---|
 | `WEBDASH_DOCKER_MODE` | `true` enables Docker mode (containers instead of directories) | Yes |
-| `WEBDASH_HOST_IP` | Host IP for container URLs (default: `HTTP_HOST`) | Optional |
+| `WEBDASH_HOST_IP` | Target host for automatically built `IP:PORT` links | Optional |
+| `WEBDASH_DOCKER_HEALTH_MODE` | `state` = Docker state, `http` = real HTTP reachability check, `off` = state only | Optional |
+| `WEBDASH_DOCKER_ALLOW_PRIVATE_PORTS` | `true` allows fallback to non-published container ports | Optional |
 | `WEBDASH_HOSTNAME` | Display name in dashboard (default: system hostname) | Optional |
 | `WEBDASH_SCAN_DIR` | Also scan a directory for web apps (requires volume mount) | Optional |
 
@@ -261,9 +288,30 @@ docker run -d \
   --label webdash.icon="🎮" \
   --label webdash.description="App description" \
   --label webdash.url="http://{HOST_IP}:3000" \
+  --label webdash.host="app.example.com" \
+  --label webdash.scheme="https" \
+  --label webdash.path="/" \
   --label webdash.hidden=true \
   nginx
 ```
+
+| Label | Description |
+|---|---|
+| `webdash.name` | Display name (instead of container name) |
+| `webdash.icon` | Emoji icon (default: 🐳) |
+| `webdash.description` | Description text |
+| `webdash.url` | Full target URL, highest priority (`{HOST_IP}` is replaced) |
+| `webdash.host` | Explicit target host or domain for the app |
+| `webdash.scheme` | `http` or `https` for `webdash.host` / `webdash.port` |
+| `webdash.path` | Optional path, e.g. `/app` |
+| `webdash.port` | Explicit target port instead of auto-detection |
+| `webdash.hidden` | `true` = hide container in dashboard |
+
+Notes:
+
+- Without `webdash.url` or `webdash.host`, webdash only uses published host ports as the automatic fallback.
+- Non-published internal container ports are no longer linked by default because they are usually not reachable from the browser.
+- Reverse proxy or domain-based setups should set `webdash.url` or `webdash.host`.
 
 | Label | Description |
 |---|---|

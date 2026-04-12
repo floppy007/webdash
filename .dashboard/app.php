@@ -12,7 +12,7 @@
  */
 session_start();
 
-define('WEBDASH_VERSION', '1.75');
+define('WEBDASH_VERSION', '1.76');
 
 // --- Basispfad / Base path ---
 // Erkennt automatisch, ob webdash in einem Unterverzeichnis läuft
@@ -181,7 +181,10 @@ if (!is_dir(DASH_PROJECT_LOGOS)) @mkdir(DASH_PROJECT_LOGOS, 0755, true);
 $dockerMode = (getenv('WEBDASH_DOCKER_MODE') === 'true')
     || (file_exists('/.dockerenv') && file_exists('/var/run/docker.sock'));
 $dockerSocket = '/var/run/docker.sock';
-$dockerHostIp = getenv('WEBDASH_HOST_IP') ?: ($_SERVER['HTTP_HOST'] ?? 'localhost');
+$dockerHostIp = getenv('WEBDASH_HOST_IP') ?: ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost');
+$dockerHealthMode = strtolower(trim((string)(getenv('WEBDASH_DOCKER_HEALTH_MODE') ?: 'state')));
+if (!in_array($dockerHealthMode, ['state', 'http', 'off'], true)) $dockerHealthMode = 'state';
+$dockerAllowPrivatePorts = filter_var(getenv('WEBDASH_DOCKER_ALLOW_PRIVATE_PORTS') ?: 'false', FILTER_VALIDATE_BOOLEAN);
 
 // Homelab-Icons: Direkt gerenderte SVG-Logos für gängige Homelab-Dienste
 // Homelab icons: Directly rendered SVG logos for common homelab services
@@ -256,8 +259,146 @@ function dockerApiGet(string $endpoint): ?array {
     return json_decode($response, true);
 }
 
+function normalizeDockerHost(string $host): string {
+    $host = trim(explode(',', $host)[0] ?? '');
+    if ($host === '') return 'localhost';
+    if (!preg_match('#^[a-z][a-z0-9+.\-]*://#i', $host)) $host = '//' . ltrim($host, '/');
+    $parsed = parse_url($host);
+    return $parsed['host'] ?? trim($host, '/');
+}
+
+function currentRequestScheme(): string {
+    return ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')) ? 'https' : 'http';
+}
+
+function dockerFirstPublishedPort(array $ports): ?array {
+    foreach ($ports as $p) {
+        if (!empty($p['PublicPort'])) {
+            return [
+                'public' => (int)$p['PublicPort'],
+                'private' => (int)($p['PrivatePort'] ?? 0),
+            ];
+        }
+    }
+    return null;
+}
+
+function dockerFirstPrivatePort(array $ports): ?int {
+    foreach ($ports as $p) {
+        $privPort = (int)($p['PrivatePort'] ?? 0);
+        if ($privPort > 0) return $privPort;
+    }
+    return null;
+}
+
+function dockerTraefikRouteUrl(array $labels): string {
+    foreach ($labels as $key => $value) {
+        if (!preg_match('/^traefik\.http\.routers\.([^.]+)\.rule$/', $key, $m)) continue;
+        $router = $m[1];
+        $rule = (string)$value;
+        if (!preg_match('/Host\(`([^`]+)`\)/', $rule, $hostMatch)) continue;
+        $host = trim(explode(',', $hostMatch[1])[0] ?? '');
+        if ($host === '') continue;
+        $path = '';
+        if (preg_match('/PathPrefix\(`([^`]+)`\)/', $rule, $pathMatch)) {
+            $path = '/' . ltrim($pathMatch[1], '/');
+        }
+        $tls = strtolower((string)($labels["traefik.http.routers.$router.tls"] ?? ''));
+        $entrypoints = strtolower((string)($labels["traefik.http.routers.$router.entrypoints"] ?? ''));
+        $scheme = ($tls === 'true' || str_contains($entrypoints, 'websecure')) ? 'https' : 'http';
+        return $scheme . '://' . $host . ($path === '/' ? '' : $path);
+    }
+    return '';
+}
+
+function dockerBuildUrl(array $labels, array $container, string $defaultHost, bool $allowPrivatePorts): string {
+    if (!empty($labels['webdash.url'])) {
+        return str_replace('{HOST_IP}', $defaultHost, $labels['webdash.url']);
+    }
+
+    $host = !empty($labels['webdash.host']) ? normalizeDockerHost((string)$labels['webdash.host']) : normalizeDockerHost($defaultHost);
+    $scheme = strtolower(trim((string)($labels['webdash.scheme'] ?? '')));
+    $scheme = in_array($scheme, ['http', 'https'], true) ? $scheme : currentRequestScheme();
+    $path = trim((string)($labels['webdash.path'] ?? ''), '/');
+    $path = $path !== '' ? '/' . $path : '';
+
+    if (!empty($labels['webdash.host'])) {
+        if (!empty($labels['webdash.port'])) {
+            return $scheme . '://' . $host . ':' . (int)$labels['webdash.port'] . $path . '/';
+        }
+        return $scheme . '://' . $host . $path . ($path === '' ? '/' : '');
+    }
+
+    $traefikUrl = dockerTraefikRouteUrl($labels);
+    if ($traefikUrl !== '') return $traefikUrl;
+
+    if (!empty($labels['webdash.port'])) {
+        $labelPort = (int)$labels['webdash.port'];
+        $labelScheme = in_array($labelPort, [443, 8443, 9443], true) ? 'https' : $scheme;
+        return $labelScheme . '://' . $host . ':' . $labelPort . $path . '/';
+    }
+
+    $ports = $container['Ports'] ?? [];
+    $published = dockerFirstPublishedPort($ports);
+    if ($published) {
+        $port = $published['public'];
+        $proto = in_array($port, [443, 8443, 9443], true) || $published['private'] === 443 ? 'https' : $scheme;
+        return $proto . '://' . $host . ':' . $port . $path . '/';
+    }
+
+    if (!$allowPrivatePorts) return '';
+
+    $privatePort = dockerFirstPrivatePort($ports);
+    if ($privatePort) {
+        $proto = in_array($privatePort, [443, 8443, 9443], true) ? 'https' : $scheme;
+        return $proto . '://' . $host . ':' . $privatePort . $path . '/';
+    }
+
+    if (strtolower($container['State'] ?? '') !== 'running') return '';
+
+    $inspect = dockerApiGet('/containers/' . ($container['Id'] ?? '') . '/json');
+    if (!$inspect) return '';
+    $exposed = $inspect['Config']['ExposedPorts'] ?? [];
+    $bestPort = 0;
+    foreach (array_keys($exposed) as $ep) {
+        $epNum = (int)preg_replace('/\/.*/', '', $ep);
+        if ($epNum > $bestPort) $bestPort = $epNum;
+    }
+    if (!$bestPort) return '';
+    $proto = in_array($bestPort, [443, 8443, 9443], true) ? 'https' : $scheme;
+    return $proto . '://' . $host . ':' . $bestPort . $path . '/';
+}
+
+function dockerProjectStatus(string $state, string $url, string $healthMode): array {
+    $stateStatus = match($state) {
+        'running'  => 'online',
+        'paused'   => 'gesperrt',
+        'exited', 'dead', 'removing' => 'offline',
+        default    => 'offline',
+    };
+
+    if ($healthMode === 'off') {
+        return ['status' => $stateStatus, 'statusCode' => $stateStatus === 'online' ? 200 : 0];
+    }
+
+    if ($state !== 'running') {
+        return ['status' => $stateStatus, 'statusCode' => 0];
+    }
+
+    if ($url === '') {
+        return ['status' => 'offline', 'statusCode' => 0];
+    }
+
+    if ($healthMode === 'http') {
+        $code = httpHealthCheck($url);
+        return ['status' => httpCodeToStatus($code), 'statusCode' => $code];
+    }
+
+    return ['status' => $stateStatus, 'statusCode' => 200];
+}
+
 function discoverDockerContainers(): array {
-    global $dockerHostIp, $dockerMode;
+    global $dockerHostIp, $dockerMode, $dockerHealthMode, $dockerAllowPrivatePorts;
     if (!$dockerMode) return [];
     $containers = dockerApiGet('/containers/json?all=true');
     if (!$containers) return [];
@@ -273,68 +414,8 @@ function discoverDockerContainers(): array {
         $state = strtolower($c['State'] ?? 'unknown');
         $statusText = $c['Status'] ?? '';
         $containerId = substr($c['Id'] ?? '', 0, 12);
-        // Build URL from port mapping
-        // Priorität / Priority: webdash.url > webdash.port > PublicPort > PrivatePort > ExposedPorts (Inspect)
-        $url = '';
-        $host = $dockerHostIp;
-        if (str_contains($host, ':')) $host = explode(':', $host)[0];
-        $ports = $c['Ports'] ?? [];
-        if (!empty($labels['webdash.port'])) {
-            $labelPort = (int)$labels['webdash.port'];
-            $proto = ($labelPort == 443 || $labelPort == 9443 || $labelPort == 8443) ? 'https' : 'http';
-            $url = "$proto://$host:$labelPort/";
-        } else {
-            // 1. PublicPort suchen / Look for PublicPort
-            foreach ($ports as $p) {
-                if (!empty($p['PublicPort'])) {
-                    $pubPort = (int)$p['PublicPort'];
-                    $privPort = (int)($p['PrivatePort'] ?? 0);
-                    $proto = ($pubPort == 443 || $pubPort == 9443 || $pubPort == 8443 || $privPort == 443) ? 'https' : 'http';
-                    $url = "$proto://$host:$pubPort/";
-                    break;
-                }
-            }
-            // 2. Fallback: PrivatePort aus Liste / PrivatePort from list
-            if ($url === '') {
-                foreach ($ports as $p) {
-                    $privPort = (int)($p['PrivatePort'] ?? 0);
-                    if ($privPort) {
-                        $proto = ($privPort == 443 || $privPort == 9443 || $privPort == 8443) ? 'https' : 'http';
-                        $url = "$proto://$host:$privPort/";
-                        break;
-                    }
-                }
-            }
-            // 3. Fallback: Container inspizieren für ExposedPorts (Host-Network etc.)
-            // Fallback: Inspect container for ExposedPorts (host network etc.)
-            if ($url === '' && $state === 'running') {
-                $inspect = dockerApiGet('/containers/' . ($c['Id'] ?? '') . '/json');
-                if ($inspect) {
-                    $exposed = $inspect['Config']['ExposedPorts'] ?? [];
-                    // Höchsten Port nehmen (meist Web-UI) / Take highest port (usually web UI)
-                    $bestPort = 0;
-                    foreach (array_keys($exposed) as $ep) {
-                        $epNum = (int)preg_replace('/\/.*/', '', $ep);
-                        if ($epNum > $bestPort) $bestPort = $epNum;
-                    }
-                    if ($bestPort) {
-                        $proto = ($bestPort == 443 || $bestPort == 9443 || $bestPort == 8443) ? 'https' : 'http';
-                        $url = "$proto://$host:$bestPort/";
-                    }
-                }
-            }
-        }
-        // Override URL from label (höchste Priorität / highest priority)
-        if (!empty($labels['webdash.url'])) {
-            $url = str_replace('{HOST_IP}', $dockerHostIp, $labels['webdash.url']);
-        }
-        // Status mapping
-        $status = match($state) {
-            'running'  => 'online',
-            'paused'   => 'gesperrt',
-            'exited', 'dead', 'removing' => 'offline',
-            default    => 'offline',
-        };
+        $url = dockerBuildUrl($labels, $c, $dockerHostIp, $dockerAllowPrivatePorts);
+        $resolvedStatus = dockerProjectStatus($state, $url, $dockerHealthMode);
         $projects[] = [
             'name'         => $rawName,
             'display_name' => $name !== $rawName ? $name : '',
@@ -343,11 +424,12 @@ function discoverDockerContainers(): array {
             'type'         => $image,
             'description'  => $labels['webdash.description'] ?? '',
             'icon'         => $labels['webdash.icon'] ?? '',
-            'status'       => $status,
-            'statusCode'   => $status === 'online' ? 200 : 0,
+            'status'       => $resolvedStatus['status'],
+            'statusCode'   => $resolvedStatus['statusCode'],
             'docker'       => true,
             'container_id' => $containerId,
             'docker_status'=> $statusText,
+            'docker_state' => $state,
         ];
     }
     return $projects;
